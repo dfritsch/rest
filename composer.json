@@ -1,0 +1,28 @@
+{
+    "name": "dfritsch/rest",
+    "version": "0.0.1",
+    "description": "Webity base REST (API) framework, based on Joomla Framework",
+    "keywords": ["web","framework"],
+    "homepage": "http://www.makethewebwork.com",
+    "license": "All Rights Reserved",
+    "require": {
+        "php": ">=5.3.10",
+        "psr/log": "~1.0",
+        "bshaffer/oauth2-server-php": "v1.3",
+        "joomla/framework": "*",
+        "league/plates": "2.*"
+    },
+    "require-dev": {
+         "symfony/yaml": "~2.0"
+    },
+    "suggest": {
+        "symfony/yaml": "Install symfony/yaml 2.* if you require YAML support."
+    },
+    "autoload": {
+        "psr-0": {
+            "Psr": "vendor/psr/cache",
+            "Webity": "src/"
+        }
+    },
+    "minimum-stability": "beta"
+}
