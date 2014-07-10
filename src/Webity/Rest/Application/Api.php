@@ -143,6 +143,14 @@ class Api extends AbstractWebApplication
 		return json_encode($this->response->body);
 	}
 
+	public function getTokenUser() {
+		$server = OauthServer::getInstance();
+
+		$token = $server->handleResource();
+		
+		return $token['user_id'];
+	}
+
 	public function authenticate() {
 		$this->markDebug('Start Authentication');
 		try {
