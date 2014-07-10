@@ -208,8 +208,6 @@ class Api extends AbstractWebApplication
 				    	throw new \Exception('Invalid username or password.', 401);
 				    }
 
-				    exit($this->get('users_table', 'oauth_users'));
-
 				    $crypt = new \Joomla\Crypt\Password\Simple();
 				    $auth = $crypt->verify($password, $user->password);
 
@@ -219,7 +217,8 @@ class Api extends AbstractWebApplication
 
 				    $this->setUser($user);
 				} else {
-					$this->header('WWW-Authenticate: Basic realm="Real Estate Ally API"');
+					exit($this->get('users_table', 'oauth_users'));
+					$this->header('WWW-Authenticate: Basic realm="MIMIC API"');
 				    throw new \Exception('Authentication required to access system.', 401);
 				} 
 			}
