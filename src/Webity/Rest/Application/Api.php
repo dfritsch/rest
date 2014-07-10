@@ -217,7 +217,6 @@ class Api extends AbstractWebApplication
 
 				    $this->setUser($user);
 				} else {
-					exit($this->get('users_table', 'oauth_users'));
 					$this->header('WWW-Authenticate: Basic realm="MIMIC API"');
 				    throw new \Exception('Authentication required to access system.', 401);
 				} 
