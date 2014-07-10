@@ -208,6 +208,8 @@ class Api extends AbstractWebApplication
 				    	throw new \Exception('Invalid username or password.', 401);
 				    }
 
+				    exit($this->get('users_table', 'oauth_users'));
+
 				    $crypt = new \Joomla\Crypt\Password\Simple();
 				    $auth = $crypt->verify($password, $user->password);
 
