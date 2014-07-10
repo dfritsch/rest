@@ -181,7 +181,7 @@ class Api extends AbstractWebApplication
 
 				$query->select('*')
 			    	->from('#__' . $this->get('users_table', 'oauth_users'))
-			    	->where('username = ' . $db->quote($data['user_id']));
+			    	->where('userName = ' . $db->quote($data['user_id']));
 
 			    $user = $db->setQuery($query, 0, 1)->loadObject();
 
@@ -200,7 +200,7 @@ class Api extends AbstractWebApplication
 
 				    $query->select('*')
 				    	->from('#__' . $this->get('users_table', 'oauth_users'))
-				    	->where('username = ' . $db->quote($username));
+				    	->where('userName = ' . $db->quote($username));
 
 				    $user = $db->setQuery($query, 0, 1)->loadObject();
 

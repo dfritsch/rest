@@ -70,7 +70,7 @@ class Server
 		if (empty($_POST)) {
 		  exit('
 		<form method="post">
-		  <h3>Login to authorize Real Estate Ally Connection</h3><br />
+		  <h3>Login to authorize MIMIC API Connection</h3><br />
 		  <label>Username</label><input type="text" name="username" /><br>
 		  <label>Password</label><input type="password" name="password" /><br>
 		  <input type="submit" name="authorized" value="Submit">
