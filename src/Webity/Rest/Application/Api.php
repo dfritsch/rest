@@ -157,7 +157,8 @@ class Api extends AbstractWebApplication
 
 				$server = OauthServer::getInstance();
 
-				switch ($this->input->get('id')) {
+				switch ($_REQUEST['id']) {
+					case 'password':
 					case 'token':
 						$server->handleToken();
 						break;
@@ -168,7 +169,7 @@ class Api extends AbstractWebApplication
 						$server->authorize();
 						break;
 					default:
-						throw new \Exception('Malformed Oauth Request', 400);
+						throw new \Exception("Malformed oauth request", 400);
 						break;
 				}
 			} elseif ($this->input->get('access_token', '')) {
