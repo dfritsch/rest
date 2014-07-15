@@ -14,7 +14,7 @@ class Users extends Objects
 		);
 	protected $agent_id = 0;
 	protected static $instances = array();
-	
+
 	public static function getInstance($identifier = 0)
 	{
 		// Find the user id
@@ -44,9 +44,9 @@ class Users extends Objects
 
 		return self::$instances[$id];
 	}
-	
+
 	protected function load($id, $check_agency = false)
-	{	
+	{
 		$item = new \stdClass;
 		$db = Api::getInstance()->getDbo();
 		$query = $db->getQuery(true);
@@ -55,7 +55,7 @@ class Users extends Objects
 		// 	->where('id = '.(int)$id);
 		//replaced with the other users table
 		$query->select('*')
-			->from('#__User')
+			->from('#__' . Api::getInstance()->get('users_table', 'oauth_users'))
 			->where('id = '.(int)$id);
 
 		$item->user = $db->setQuery($query, 0, 1)->loadObject();
@@ -81,16 +81,16 @@ class Users extends Objects
 		$db = Api::getInstance()->getDbo();
 		$query = $db->getQuery(true);
 		$data = new \stdClass;
-		
+
 		// $query->select('u.id, u.name, u.username, u.email, u.block, u.sendEmail')
 		// 	->from('#__oauth_users as u');
 
 		//load the users
 		$query->select('u.id, u.userName')
-			->from('#__User as u');
+			->from('#__' . Api::getInstance()->get('users_table', 'oauth_users') .' as u');
 
 		$this->processSearch($query, Api::getInstance()->input->get('users', array(), 'ARRAY'));
-		
+
 		$items = $db->setQuery($query, $limitstart, $limit)->loadObjectList();
 
 		// add the total numbers to the result;
@@ -101,37 +101,34 @@ class Users extends Objects
 
 		return $data;
 	}
-	
+
 	// TODO: rewrite this to work
 	public function createUser($email, $name, $code='') {
 		// create user and insert base record into advantage users page
 		jimport( 'joomla.user.helper' );
-	
+
 		$app =& Api::getInstance();
 		// because we have a class named user as well, we need to grab the user class on our own
 		require_once (JPATH_ROOT . '/libraries/joomla/database/table/user.php');
-		
+
 		$jom_id = JUserHelper::getUserId($email);
 		if ($jom_id) {
 			$db = Api::getInstance()->getDbo();
-			// if (!$db->setQuery('SELECT id FROM #__advantage_users WHERE id='.$jom_id)->loadResult()) {
-			// 	$db->setQuery('INSERT INTO #__advantage_users SET id='.$jom_id)->query();
-			// }
-			if (!$db->setQuery('SELECT id FROM #__User WHERE id='.$jom_id)->loadResult()) {
-				$db->setQuery('INSERT INTO #__User SET id='.$jom_id)->query();
+			if (!$db->setQuery('SELECT id FROM `#__User` WHERE id='.$jom_id)->loadResult()) {
+				$db->setQuery('INSERT INTO `#__User` SET id='.$jom_id)->query();
 			}
 			return $jom_id;
 		}
-		
+
 		if (!$code) {
 			$code = JUserHelper::genRandomPassword();
 		}
-		
+
 		// $user_data = array(
 		// 	'username' => $email,
 		// 	'email' => $email,
 		// 	'password' => $code,
-		// 	'password2' => $code, 
+		// 	'password2' => $code,
 		// 	'name' => $name
 		// 	);
 
@@ -140,34 +137,34 @@ class Users extends Objects
 			'password' => $code,
 			'password2' => $code
 			);
-		
+
 		$user  = new JUser;
 		$user->bind($user_data);
 		$jom_users_id = $user->save();
-		
+
 		// if($jom_users_id) {
 		// 	$jom_users_id = $user->id;
 		// 	JUserHelper::addUserToGroup($jom_users_id, 2);
-			
+
 		// 	$db = Api::getInstance()->getDbo();
 		// 	$base_user = new stdClass();
 		// 	$base_user->id = $jom_users_id;
 		// 	$db->insertObject('#__advantage_users', $base_user);
-			
+
 		// 	$mailer =& JFactory::getMailer();
 		// 	// Set a sender
 		// 	$config =& JFactory::getConfig();
-		// 	$sender = array( 
+		// 	$sender = array(
 		// 		$config->get( 'mailfrom' ),
 		// 		$config->get( 'fromname' ) );
-			 
+
 		// 	$mailer->setSender($sender);
-			
+
 		// 	// Recipient
 		// 	$mailer->addRecipient($user->email);
-			
+
 		// 	$mailer->setSubject('Your Real Estate Ally User Details!');
-			
+
 		// 	// Set email
 		// 	$body	= '<h3>Hello '.$user->name.',</h3>';
 		// 	$body	.= '<p>You have been added as a user for Real Estate Ally.</p>';
@@ -181,20 +178,20 @@ class Users extends Objects
 		// 	$mailer->setBody($body);
 		// 	// Optionally add embedded image
 		// 	//$mailer->AddEmbeddedImage( JPATH_COMPONENT.DS.'assets'.DS.'logo128.jpg', 'logo_id', 'logo.jpg', 'base64', 'image/jpeg' );
-			
+
 		// 	if (strpos($user->email, '@makethewebwork.com')) {
 		// 		$send =& $mailer->Send();
 		// 	} else {
 		// 		$send = false;
 		// 	}
-			
+
 		// 	if ( $send !== true ) {
 		// 		$app->enqueueMessage( 'Error sending email: ' . $send->message );
 		// 	} else {
 		// 		$app->enqueueMessage( 'Mail sent' );
 		// 	}
 		// }
-		
+
 		return $jom_users_id;
 	}
 
@@ -207,7 +204,7 @@ class Users extends Objects
 		// 	->where('email LIKE '.$db->quote($email) .' OR username LIKE '.$db->quote($email));
 
 		$query->select('id')
-			->from('#__User')
+			->from('#__' . Api::getInstance()->get('users_table', 'oauth_users'))
 			->where('userName LIKE '.$db->quote($email) .' OR username LIKE '.$db->quote($email));
 
 		return $db->setQuery($query, 0, 1)->loadResult();

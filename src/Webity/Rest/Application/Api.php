@@ -143,14 +143,6 @@ class Api extends AbstractWebApplication
 		return json_encode($this->response->body);
 	}
 
-	public function getTokenUser() {
-		$server = OauthServer::getInstance();
-
-		$token = $server->handleResource();
-		
-		return $token['user_id'];
-	}
-
 	public function authenticate() {
 		$this->markDebug('Start Authentication');
 		try {
@@ -165,7 +157,7 @@ class Api extends AbstractWebApplication
 
 				$server = OauthServer::getInstance();
 
-				switch ($_REQUEST['id']) {
+				switch ($this->input->get('id')) {
 					case 'password':
 					case 'token':
 						$server->handleToken();
@@ -226,9 +218,9 @@ class Api extends AbstractWebApplication
 
 				    $this->setUser($user);
 				} else {
-					$this->header('WWW-Authenticate: Basic realm="MIMIC API"');
+					$this->header('WWW-Authenticate: Basic realm="'. strtoupper(Api::getInstance()->get('name', 'Webity')) .' API"');
 				    throw new \Exception('Authentication required to access system.', 401);
-				} 
+				}
 			}
 		} catch (\Exception $e) {
 			$this->raiseError($e->getMessage(), $e->getCode());

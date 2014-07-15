@@ -70,7 +70,7 @@ class Server
 		if (empty($_POST)) {
 		  exit('
 		<form method="post">
-		  <h3>Login to authorize MIMIC API Connection</h3><br />
+		  <h3>Login to authorize '. Api::getInstance()->get('name', 'Webity') .' API Connection</h3><br />
 		  <label>Username</label><input type="text" name="username" /><br>
 		  <label>Password</label><input type="password" name="password" /><br>
 		  <input type="submit" name="authorized" value="Submit">
@@ -83,7 +83,7 @@ class Server
 		$is_authorized = $this->storage->checkUserCredentials($username, $password);
 
 		$this->server->handleAuthorizeRequest($request, $response, $is_authorized, $username);
-		
+
 		$response->send();
 		exit();
 	}
