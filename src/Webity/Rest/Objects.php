@@ -22,13 +22,27 @@ abstract class Objects
 
 		$id = $app->input->get('id');
 
-		if ($id) {
-			return $this->getData($id);
-		} else {
-			return $this->getList();
+		switch ($app->input->getMethod()) {
+			case 'GET':
+			default:
+				return ($id ? $this->getData($id) : $this->getList());
+				break;
+			case 'POST':
+			case 'PUT':
+				return $this->modifyRecord($id);
+				break;
+			case 'DELETE':
+				if ($id) {
+					$this->getData($id);
+				} else {
+					throw new \Exception('ID required for DELETE method.');
+				}
+
+				break;
 		}
+
 	}
-	
+
 	/*
 	**	Should be loading the data based on the id, so no search
 	*/
@@ -88,7 +102,7 @@ abstract class Objects
 		$search['search'] = Api::getInstance()->input->get('search', '', 'STRING');
 
 		$search = $this->parseSearch($search);
-		
+
 		if (is_array($search)) {
 			foreach ($search as $key=>$val) {
 				switch($key) {
@@ -142,4 +156,5 @@ abstract class Objects
 
 	abstract protected function load($id, $check_agency);
 	abstract protected function loadMany($limitstart, $limit, $orderCol, $orderDirn);
+	abstract protected function modifyRecord($id);
 }
