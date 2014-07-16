@@ -158,7 +158,6 @@ class Api extends AbstractWebApplication
 				$server = OauthServer::getInstance();
 
 				switch ($this->input->get('id')) {
-					case 'password':
 					case 'token':
 						$server->handleToken();
 						break;

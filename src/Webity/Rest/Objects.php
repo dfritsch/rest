@@ -157,4 +157,69 @@ abstract class Objects
 	abstract protected function load($id, $check_agency);
 	abstract protected function loadMany($limitstart, $limit, $orderCol, $orderDirn);
 	abstract protected function modifyRecord($id);
+
+	function uploadFile($file_obj, $target_dir) {
+	    // Undefined | Multiple Files | $_FILES Corruption Attack
+	    // If this request falls under any of them, treat it invalid.
+	    if (
+	        !isset($file_obj['error']) ||
+	        is_array($file_obj['error'])
+	    ) {
+	        throw new \RuntimeException('Invalid parameters.');
+	    }
+
+	    // Check $file_obj['error'] value.
+	    switch ($file_obj['error']) {
+	        case UPLOAD_ERR_OK:
+	            break;
+	        case UPLOAD_ERR_NO_FILE:
+	            throw new \RuntimeException('No file sent.');
+	        case UPLOAD_ERR_INI_SIZE:
+	        case UPLOAD_ERR_FORM_SIZE:
+	            throw new \RuntimeException('Exceeded filesize limit.');
+	        default:
+	            throw new \RuntimeException('Unknown errors.');
+	    }
+
+	    // You should also check filesize here.
+	    if ($file_obj['size'] > 1000000) {
+	        throw new \RuntimeException('Exceeded filesize limit.');
+	    }
+
+	    // DO NOT TRUST $file_obj['mime'] VALUE !!
+	    // Check MIME Type by yourself.
+	    $finfo = new \finfo(FILEINFO_MIME_TYPE);
+	    if (false === $ext = array_search(
+	        $finfo->file($file_obj['tmp_name']),
+	        array(
+	            'jpg' => 'image/jpeg',
+	            'png' => 'image/png',
+	            'gif' => 'image/gif',
+	        ),
+	        true
+	    )) {
+	        throw new \RuntimeException('Invalid file format.');
+	    }
+
+		if (!file_exists($target_dir)) {
+			mkdir($target_dir);
+		}
+
+		$file_location = sprintf($target_dir.'/%s.%s',
+			sha1_file($file_obj['tmp_name']),
+			$ext
+		);
+
+	    // You should name it uniquely.
+	    // DO NOT USE $file_obj['name'] WITHOUT ANY VALIDATION !!
+	    // On this example, obtain safe unique name from its binary data.
+	    if (!move_uploaded_file(
+	        $file_obj['tmp_name'],
+	        $file_location
+	    )) {
+	        throw new \RuntimeException('Failed to move uploaded file.');
+	    }
+
+	    return $file_location;
+	}
 }
