@@ -10,7 +10,7 @@ use Webity\Rest\Application\Api;
 class Users extends Objects
 {
 	protected $text_fields = array(
-			'userName',
+			'username',
 		);
 	protected $agent_id = 0;
 	protected static $instances = array();
@@ -86,7 +86,7 @@ class Users extends Objects
 		// 	->from('#__oauth_users as u');
 
 		//load the users
-		$query->select('u.id, u.userName')
+		$query->select('u.id, u.username')
 			->from('#__' . Api::getInstance()->get('users_table', 'oauth_users') .' as u');
 
 		$this->processSearch($query, Api::getInstance()->input->get('users', array(), 'ARRAY'));
@@ -114,8 +114,8 @@ class Users extends Objects
 		$jom_id = JUserHelper::getUserId($email);
 		if ($jom_id) {
 			$db = Api::getInstance()->getDbo();
-			if (!$db->setQuery('SELECT id FROM `#__User` WHERE id='.$jom_id)->loadResult()) {
-				$db->setQuery('INSERT INTO `#__User` SET id='.$jom_id)->query();
+			if (!$db->setQuery('SELECT id FROM #__' . Api::getInstance()->get('users_table', 'oauth_users') . ' WHERE id='.$jom_id)->loadResult()) {
+				$db->setQuery('INSERT INTO #__' . Api::getInstance()->get('users_table', 'oauth_users') . ' SET id='.$jom_id)->query();
 			}
 			return $jom_id;
 		}
