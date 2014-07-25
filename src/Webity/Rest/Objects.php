@@ -166,7 +166,7 @@ abstract class Objects
 	}
 
 	abstract protected function load($id, $check_agency);
-	abstract protected function loadMany($request);
+	abstract protected function loadMany(\stdClass $request);
 	abstract protected function modifyRecord($id);
 
 	function uploadFile($file_obj, $target_dir) {

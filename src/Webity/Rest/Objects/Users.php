@@ -75,7 +75,7 @@ class Users extends Objects
 		return $item;
 	}
 
-	protected function loadMany($limitstart, $limit, $orderCol, $orderDirn) {
+	protected function loadMany(\stdClass $request) {
 		// TODO: support this function
 
 		$db = Api::getInstance()->getDbo();
