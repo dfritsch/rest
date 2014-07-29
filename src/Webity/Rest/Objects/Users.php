@@ -55,8 +55,12 @@ class Users extends Objects
 		// 	->where('id = '.(int)$id);
 		//replaced with the other users table
 		$query->select('*')
-			->from('#__' . Api::getInstance()->get('users_table', 'oauth_users'))
-			->where('id = '.(int)$id);
+			->from('#__' . Api::getInstance()->get('users_table', 'oauth_users'));
+		if(is_numeric($id)) {
+			$query->where('id = ' . (int)$id);
+		} else {
+			$query->where('username = "' . $id . '"');
+		}
 
 		$item->user = $db->setQuery($query, 0, 1)->loadObject();
 
@@ -211,6 +215,6 @@ class Users extends Objects
 	}
 
 	protected function modifyRecord($id) {
-		
+
 	}
 }
