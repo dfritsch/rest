@@ -77,6 +77,7 @@ abstract class Objects
 		//this is specific to the agrilead app
 		$data->start_date = $input->get->get('start_date', '-1 year', 'STRING');
 		$data->end_date = $input->get->get('end_date', 'now', 'STRING');
+		$data->crop = $input->get->get('crop', '', 'STRING');
 		$data->business_name = $input->get->get('business_name', '', 'STRING');
 		$data->customer_name = $input->get->get('customer_name', '', 'STRING');
 		$data->operator = $input->get->get('operator', '', 'STRING');
