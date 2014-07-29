@@ -209,4 +209,8 @@ class Users extends Objects
 
 		return $db->setQuery($query, 0, 1)->loadResult();
 	}
+
+	protected function modifyRecord($id) {
+		
+	}
 }
