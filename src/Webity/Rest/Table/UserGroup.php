@@ -187,33 +187,33 @@ class TableUserGroup extends Table
 		}
 
 		// SQLSsrv change. Alternative for regexp
-		$query->clear()
-			->select('id, rules')
-			->from('#__viewlevels');
-		$db->setQuery($query);
-		$rules = $db->loadObjectList();
+		// $query->clear()
+		// 	->select('id, rules')
+		// 	->from('#__viewlevels');
+		// $db->setQuery($query);
+		// $rules = $db->loadObjectList();
 
-		$match_ids = array();
-		foreach ($rules as $rule)
-		{
-			foreach ($ids as $id)
-			{
-				if (strstr($rule->rules, '[' . $id) || strstr($rule->rules, ',' . $id) || strstr($rule->rules, $id . ']'))
-				{
-					$match_ids[] = $rule->id;
-				}
-			}
-		}
+		// $match_ids = array();
+		// foreach ($rules as $rule)
+		// {
+		// 	foreach ($ids as $id)
+		// 	{
+		// 		if (strstr($rule->rules, '[' . $id) || strstr($rule->rules, ',' . $id) || strstr($rule->rules, $id . ']'))
+		// 		{
+		// 			$match_ids[] = $rule->id;
+		// 		}
+		// 	}
+		// }
 
-		if (!empty($match_ids))
-		{
-			$query->clear()
-				->set('rules=' . str_repeat('replace(', 4 * count($ids)) . 'rules' . implode('', $replace))
-				->update('#__viewlevels')
-				->where('id IN (' . implode(',', $match_ids) . ')');
-			$db->setQuery($query);
-			$db->execute();
-		}
+		// if (!empty($match_ids))
+		// {
+		// 	$query->clear()
+		// 		->set('rules=' . str_repeat('replace(', 4 * count($ids)) . 'rules' . implode('', $replace))
+		// 		->update('#__viewlevels')
+		// 		->where('id IN (' . implode(',', $match_ids) . ')');
+		// 	$db->setQuery($query);
+		// 	$db->execute();
+		// }
 
 		// Delete the user to usergroup mappings for the group(s) from the database.
 		$query->clear()
