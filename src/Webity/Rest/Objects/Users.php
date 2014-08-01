@@ -169,11 +169,11 @@ class Users extends Objects
 		$data->username = $username ? $username : $data->username;
 		$data->password = $password ? $hasher->create($password, PasswordInterface::JOOMLA) : $data->password;
 
-		if ($data->userId) {
+		if ($data->id) {
 			$db->updateObject($this->users_table, $data, 'id');
 		} else {
 			$db->insertObject($this->users_table, $data);
-			$data->userId = $db->insertid();
+			$data->id = $db->insertid();
 		}
 
 		return $data;
