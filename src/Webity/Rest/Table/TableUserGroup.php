@@ -224,4 +224,31 @@ class TableUserGroup extends Table
 
 		return true;
 	}
+
+	//taken from JTableNested so we can retrieve all of the subgroups
+	public function getTree($pk = null, $diagnostic = false)
+	{
+	        // Initialise variables.
+	        $k = $this->_tbl_key;
+	        $pk = (is_null($pk)) ? $this->$k : $pk;
+	 
+	        // Get the node and children as a tree.
+	        $select = ($diagnostic) ? 'SELECT n.'.$k.', n.parent_id, n.level, n.lft, n.rgt' : 'SELECT n.*';
+	        $this->_db->setQuery(
+	                $select .
+	                ' FROM `'.$this->_tbl.'` AS n, `'.$this->_tbl.'` AS p' .
+	                ' WHERE n.lft BETWEEN p.lft AND p.rgt' .
+	                ' AND p.'.$k.' = '.(int) $pk .
+	                ' ORDER BY n.lft'
+	        );
+	        $tree = $this->_db->loadObjectList();
+	 
+	        // Check for a database error.
+	        if ($this->_db->getErrorNum()) {
+	                $this->setError($this->_db->getErrorMsg());
+	                return false;
+	        }
+	 
+	        return $tree;
+	}
 }
