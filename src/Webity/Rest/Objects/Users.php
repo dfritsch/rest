@@ -64,11 +64,16 @@ class Users extends Objects
 		// 	->from('#__oauth_users')
 		// 	->where('id = '.(int)$id);
 		//replaced with the other users table
-		$query->select('a.*, ug.id AS group_key, ug.title AS group_title')
+		$query->select('a.*, 
+						ug.id AS group_key, 
+						ug.title AS group_title, 
+						o.id AS organization_key, 
+						o.title AS organization_title')
 			  ->from($this->users_table . ' AS a')
 			  ->join('LEFT', '#__user_usergroup_map AS ugm ON ugm.user_id = a.id')
-			  ->join('LEFT', '#__usergroups AS ug ON ug.id = ugm.group_id');
-			  //we also will need to add the organization they are a part of
+			  ->join('LEFT', '#__usergroups AS ug ON ug.id = ugm.group_id')
+			  ->join('LEFT', '#__user_organization_map AS uom ON uom.user_id = a.id')
+			  ->join('LEFT', '#__organizations AS o ON o.id = uom.organization_id');
 		if(is_numeric($id)) {
 			$query->where('id = ' . (int)$id);
 		} else {
@@ -103,8 +108,16 @@ class Users extends Objects
 		// 	->from('#__oauth_users as u');
 
 		//load the users
-		$query->select('u.id, u.username')
-			  ->from($this->users_table .' as u');
+		$query->select('a.*, 
+						ug.id AS group_key, 
+						ug.title AS group_title, 
+						o.id AS organization_key, 
+						o.title AS organization_title')
+			  ->from($this->users_table .' as a')
+			  ->join('LEFT', '#__user_usergroup_map AS ugm ON ugm.user_id = a.id')
+			  ->join('LEFT', '#__usergroups AS ug ON ug.id = ugm.group_id')
+			  ->join('LEFT', '#__user_organization_map AS uom ON uom.user_id = a.id')
+			  ->join('LEFT', '#__organizations AS o ON o.id = uom.organization_id'); //later we should make it so they can select multiple organizations or groups that they're a part of
 
 		$this->processSearch($query, Api::getInstance()->input->get('users', array(), 'ARRAY'));
 
