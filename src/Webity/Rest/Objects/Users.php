@@ -3,7 +3,6 @@ namespace Webity\Rest\Objects;
 
 use Webity\Rest\Objects;
 use Webity\Rest\Application\Api;
-use Webity\Rest\Table\TableUserGroup as UserGroup; //so we don't have to do any of that nesting business ouselves
 use Joomla\Crypt\Password\Simple;
 use Joomla\Crypt\PasswordInterface;
 
@@ -142,10 +141,15 @@ class Users extends Objects
 
 		$username = $api->input->post->get('username', null, 'STRING');
 		$password = $api->input->post->get('password', null, 'STRING');
+		$name = $api->input->post->get('name', null, 'STRING');
 		//we need more than just username and password. we also need to link organization and group
 
 		if (is_null($username) && !$id) {
 			throw new \Exception('Missing required field "username"', 400);
+		}
+
+		if (is_null($name) && !$id) {
+			throw new \Exception('Missing required field "name"', 400);
 		}
 
 		if ($id) {
