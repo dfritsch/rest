@@ -80,19 +80,19 @@ class Users extends Objects
 			$query->where('username = "' . $id . '"');
 		}
 
-		$item->user = $db->setQuery($query, 0, 1)->loadObject();
+		$item->data = $db->setQuery($query, 0, 1)->loadAssoc();
 
-		if (!$item->user) {
+		if (!$item->data) {
 			throw new \Exception('User not found', 404);
 		}
 
 		// mimic JUser from CMS side
-		foreach ($item->user as $key=>$val) {
+		foreach ($item->data as $key=>$val) {
 			$this->$key = $val;
 		}
 
 		// let's not return the password...
-		unset($item->user->password);
+		unset($item->data['password']);
 
 		return $item;
 	}
@@ -121,18 +121,18 @@ class Users extends Objects
 
 		$this->processSearch($query, Api::getInstance()->input->get('users', array(), 'ARRAY'));
 
-		$items = $db->setQuery($query, $limitstart, $limit)->loadObjectList();
+		$items = $db->setQuery($query, $limitstart, $limit)->loadAssocList();
 
 		//remove all of the passwords
 		foreach($items as $key => $item) {
-			unset($items[$key]->password);
+			unset($items[$key]['password']);
 		}
 
 		// add the total numbers to the result;
 		$data->total = $this->_getListCount($query);
 
 		// wrap the items in an object
-		$data->users = $items;
+		$data->data = $items;
 
 		return $data;
 	}
