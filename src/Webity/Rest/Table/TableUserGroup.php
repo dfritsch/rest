@@ -177,14 +177,14 @@ class TableUserGroup extends Table
 		$db->execute();
 
 		// Delete the usergroup in view levels
-		$replace = array();
-		foreach ($ids as $id)
-		{
-			$replace[] = ',' . $db->quote("[$id,") . ',' . $db->quote("[") . ')';
-			$replace[] = ',' . $db->quote(",$id,") . ',' . $db->quote(",") . ')';
-			$replace[] = ',' . $db->quote(",$id]") . ',' . $db->quote("]") . ')';
-			$replace[] = ',' . $db->quote("[$id]") . ',' . $db->quote("[]") . ')';
-		}
+		// $replace = array();
+		// foreach ($ids as $id)
+		// {
+		// 	$replace[] = ',' . $db->quote("[$id,") . ',' . $db->quote("[") . ')';
+		// 	$replace[] = ',' . $db->quote(",$id,") . ',' . $db->quote(",") . ')';
+		// 	$replace[] = ',' . $db->quote(",$id]") . ',' . $db->quote("]") . ')';
+		// 	$replace[] = ',' . $db->quote("[$id]") . ',' . $db->quote("[]") . ')';
+		// }
 
 		// SQLSsrv change. Alternative for regexp
 		// $query->clear()
