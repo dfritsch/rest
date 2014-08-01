@@ -3,6 +3,7 @@ namespace Webity\Rest\Objects;
 
 use Webity\Rest\Objects;
 use Webity\Rest\Application\Api;
+use Webity\Rest\Table\TableUserGroup as UserGroup;
 
 /**
  * Methods supporting a list of {Name} records.
@@ -54,8 +55,10 @@ class Users extends Objects
 		// 	->from('#__oauth_users')
 		// 	->where('id = '.(int)$id);
 		//replaced with the other users table
-		$query->select('*')
-			->from('#__' . Api::getInstance()->get('users_table', 'oauth_users'));
+		$query->select('a.*, ug.id AS group_key, ug.title AS group_title')
+			  ->from('#__' . Api::getInstance()->get('users_table', 'oauth_users') . ' AS a')
+			  ->join('LEFT', '#__user_usergroup_map AS ugm ON ugm.user_id = a.id')
+			  ->join('LEFT', '#__usergroups AS ug ON ug.id = ugm.group_id');
 		if(is_numeric($id)) {
 			$query->where('id = ' . (int)$id);
 		} else {
@@ -91,7 +94,7 @@ class Users extends Objects
 
 		//load the users
 		$query->select('u.id, u.username')
-			->from('#__' . Api::getInstance()->get('users_table', 'oauth_users') .' as u');
+			  ->from('#__' . Api::getInstance()->get('users_table', 'oauth_users') .' as u');
 
 		$this->processSearch($query, Api::getInstance()->input->get('users', array(), 'ARRAY'));
 
@@ -108,6 +111,9 @@ class Users extends Objects
 
 	// TODO: rewrite this to work
 	public function createUser($email, $name, $code='') {
+
+		// TODO: we need to make sure that at least one user group exists before moving on with creating a user (because we are using authentication)
+
 		// create user and insert base record into advantage users page
 		jimport( 'joomla.user.helper' );
 
