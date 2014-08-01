@@ -123,6 +123,11 @@ class Users extends Objects
 
 		$items = $db->setQuery($query, $limitstart, $limit)->loadObjectList();
 
+		//remove all of the passwords
+		foreach($items as $key => $item) {
+			unset($items[$key]->password);
+		}
+
 		// add the total numbers to the result;
 		$data->total = $this->_getListCount($query);
 
