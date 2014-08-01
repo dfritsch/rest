@@ -172,6 +172,7 @@ class Users extends Objects
 		// only overwrite values if they change
 		$data->username = $username ? $username : $data->username;
 		$data->password = $password ? $hasher->create($password, PasswordInterface::JOOMLA) : $data->password;
+		$data->name = $name ? $name : $data->name;
 
 		if ($data->id) {
 			$db->updateObject($this->users_table, $data, 'id');
