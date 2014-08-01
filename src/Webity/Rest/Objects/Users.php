@@ -154,9 +154,9 @@ class Users extends Objects
 
 		if ($id) {
 			$query = $db->getQuery(true)
-				->select('*')
-				->from($this->users_table)
-				->where('id = ' . (int)$id);
+						->select('*')
+						->from($this->users_table)
+						->where('id = ' . (int)$id);
 
 			$data = $db->setQuery($query)->loadObject();
 
@@ -164,6 +164,18 @@ class Users extends Objects
 				throw new \Exception('User not found. Update failed.', 404);
 			}
 		} else {
+			//first let's check if the username has already been taken or not...
+			$query = $db->getQuery(true)
+						->select('id')
+						->from($this->users_table)
+						->where('username = ' . $db->quote($username) );
+						
+			$user = $db->setQuery($query)->loadObject();
+
+			if($user) {
+				throw new \Exception('A user with that username has already been taken', 400);
+			}
+
 			$data = new \stdClass;
 		}
 

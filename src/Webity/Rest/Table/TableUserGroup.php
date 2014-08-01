@@ -225,7 +225,7 @@ class TableUserGroup extends Table
 		return true;
 	}
 
-	//taken from JTableNested so we can retrieve all of the subgroups
+	//taken from JTableNested so we can retrieve all of the subgroups from a key
 	public function getTree($pk = null, $diagnostic = false)
 	{
 	        // Initialise variables.
@@ -241,6 +241,8 @@ class TableUserGroup extends Table
 	                ' AND p.'.$k.' = '.(int) $pk .
 	                ' ORDER BY n.lft'
 	        );
+
+	        return $k . ' primary key:' . $pk;
 	        $tree = $this->_db->loadObjectList();
 	 
 	        // Check for a database error.
