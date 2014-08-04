@@ -8,8 +8,8 @@ abstract class Objects
 {
 	protected $text_fields = array();
 	protected static $instances = array();
-	protected static $data = array();
-	protected static $_db = null;
+	protected $data = array();
+	protected $_db = null;
 
 	public function __construct ()
 	{

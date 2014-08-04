@@ -138,7 +138,7 @@ class Api extends AbstractWebApplication
 		return $this;
 	}
 
-	public function getBody()
+	public function getBody($asArray = false)
 	{
 		return json_encode($this->response->body);
 	}
