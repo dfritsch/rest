@@ -204,18 +204,20 @@ abstract class Objects
 
 	    // DO NOT TRUST $file_obj['mime'] VALUE !!
 	    // Check MIME Type by yourself.
-	    $finfo = new \finfo(FILEINFO_MIME_TYPE);
-	    if (false === $ext = array_search(
-	        $finfo->file($file_obj['tmp_name']),
-	        array(
-	            'jpg' => 'image/jpeg',
-	            'png' => 'image/png',
-	            'gif' => 'image/gif',
-	        ),
-	        true
-	    )) {
-	        throw new \RuntimeException('Invalid file format.');
-	    }
+	    // $finfo = new \finfo(FILEINFO_MIME_TYPE);
+	    // if (false === $ext = array_search(
+	    //     $finfo->file($file_obj['tmp_name']),
+	    //     array(
+	    //         'jpg' => 'image/jpeg',
+	    //         'png' => 'image/png',
+	    //         'gif' => 'image/gif',
+		// 		'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+		//  		'xls' => 'application/octet-stream'
+	    //     ),
+	    //     true
+	    // )) {
+	    //     throw new \RuntimeException('Invalid file format.');
+	    // }
 
 		if (!file_exists($target_dir)) {
 			mkdir($target_dir);

@@ -64,10 +64,10 @@ class Users extends Objects
 		// 	->from('#__oauth_users')
 		// 	->where('id = '.(int)$id);
 		//replaced with the other users table
-		$query->select('a.*, 
-						ug.id AS group_key, 
-						ug.title AS group_title, 
-						o.id AS organization_key, 
+		$query->select('a.*,
+						ug.id AS group_key,
+						ug.title AS group_title,
+						o.id AS organization_key,
 						o.title AS organization_title')
 			  ->from($this->users_table . ' AS a')
 			  ->join('LEFT', '#__user_usergroup_map AS ugm ON ugm.user_id = a.id')
@@ -75,9 +75,9 @@ class Users extends Objects
 			  ->join('LEFT', '#__user_organization_map AS uom ON uom.user_id = a.id')
 			  ->join('LEFT', '#__organizations AS o ON o.id = uom.organization_id');
 		if(is_numeric($id)) {
-			$query->where('id = ' . (int)$id);
+			$query->where('a.id = ' . (int)$id);
 		} else {
-			$query->where('username = "' . $id . '"');
+			$query->where('a.username = "' . $id . '"');
 		}
 
 		$item->data = $db->setQuery($query, 0, 1)->loadAssoc();
@@ -108,10 +108,10 @@ class Users extends Objects
 		// 	->from('#__oauth_users as u');
 
 		//load the users
-		$query->select('a.*, 
-						ug.id AS group_key, 
-						ug.title AS group_title, 
-						o.id AS organization_key, 
+		$query->select('a.*,
+						ug.id AS group_key,
+						ug.title AS group_title,
+						o.id AS organization_key,
 						o.title AS organization_title')
 			  ->from($this->users_table .' as a')
 			  ->join('LEFT', '#__user_usergroup_map AS ugm ON ugm.user_id = a.id')
@@ -191,7 +191,7 @@ class Users extends Objects
 						->select('id')
 						->from($this->users_table)
 						->where('username = ' . $db->quote($username) );
-						
+
 			$user = $db->setQuery($query)->loadObject();
 
 			if($user) {
