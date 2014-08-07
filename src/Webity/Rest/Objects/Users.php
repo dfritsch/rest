@@ -99,8 +99,8 @@ class Users extends Objects
 
 	protected function loadMany(\stdClass $request) {
 		// TODO: support this function
-
-		$db = Api::getInstance()->getDbo();
+		$api = Api::getInstance();
+		$db = $api->getDbo();
 		$query = $db->getQuery(true);
 		$data = new \stdClass;
 
@@ -118,6 +118,10 @@ class Users extends Objects
 			  ->join('LEFT', '#__usergroups AS ug ON ug.id = ugm.group_id')
 			  ->join('LEFT', '#__user_organization_map AS uom ON uom.user_id = a.id')
 			  ->join('LEFT', '#__organizations AS o ON o.id = uom.organization_id'); //later we should make it so they can select multiple organizations or groups that they're a part of
+
+		if($api->getUser()->organization_id) {
+			$query->where('o.id = ' . (int) $api->getUser()->organization_id);
+		}
 
 		$this->processSearch($query, Api::getInstance()->input->get('users', array(), 'ARRAY'));
 
