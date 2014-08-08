@@ -3,6 +3,8 @@ namespace Webity\Rest;
 
 use Webity\Rest\Application\Api;
 use Webity\Rest\Objects\User;
+use Aws\S3\S3Client;
+use Aws\S3\Exception\S3Exception;
 
 abstract class Objects
 {
@@ -10,6 +12,11 @@ abstract class Objects
 	protected static $instances = array();
 	protected static $data = array();
 	protected static $_db = null;
+	protected $valid_files = array(
+		'jpg' => 'image/jpeg',
+	    'png' => 'image/png',
+	    'gif' => 'image/gif',
+	);
 
 	public function __construct ()
 	{
@@ -159,7 +166,64 @@ abstract class Objects
 	abstract protected function modifyRecord($id);
 
 	function uploadFile($file_obj, $target_dir) {
-	    // Undefined | Multiple Files | $_FILES Corruption Attack
+	    $ext = $this->validateFile($file_obj);
+
+		if (!file_exists($target_dir)) {
+			mkdir($target_dir);
+		}
+
+		$file_location = sprintf($target_dir.'/%s.%s',
+			sha1_file($file_obj['tmp_name']),
+			$ext
+		);
+
+	    // You should name it uniquely.
+	    // DO NOT USE $file_obj['name'] WITHOUT ANY VALIDATION !!
+	    // On this example, obtain safe unique name from its binary data.
+	    if (!move_uploaded_file(
+	        $file_obj['tmp_name'],
+	        $file_location
+	    )) {
+	        throw new \RuntimeException('Failed to move uploaded file.');
+	    }
+
+	    return $file_location;
+	}
+
+	function uploadFileS3($file_obj, $target_dir) {
+		$ext = $this->validateFile($file_obj);
+		$api = Api::getInstance();
+
+		if( !empty($api->get('aws.bucket')) && !empty($api->get('aws.key')) ) {
+
+			$file_location = sprintf($target_dir.'/%s.%s',
+				sha1_file($file_obj['tmp_name']),
+				$ext
+			);
+			// Instantiate the client.
+			$s3 = S3Client::factory();
+
+			try {
+				    // Upload data.
+				    $result = $s3->putObject(array(
+				        'Bucket' => $api->get('aws.bucket'),
+				        'Key'    => $api->get('aws.key'),
+				        'SourceFile'   => $file_location,
+				        'ACL'    => 'public-read'
+			    	));
+
+			    	// Print the URL to the object.
+			    	return $result['ObjectURL'];
+			} catch (S3Exception $e) {
+			    return $e->getMessage();
+			}
+		}
+
+		return 'amazon configuration has not been set correctly';
+	}
+
+	protected function validateFile($file_obj) {
+		// Undefined | Multiple Files | $_FILES Corruption Attack
 	    // If this request falls under any of them, treat it invalid.
 	    if (
 	        !isset($file_obj['error']) ||
@@ -191,35 +255,12 @@ abstract class Objects
 	    $finfo = new \finfo(FILEINFO_MIME_TYPE);
 	    if (false === $ext = array_search(
 	        $finfo->file($file_obj['tmp_name']),
-	        array(
-	            'jpg' => 'image/jpeg',
-	            'png' => 'image/png',
-	            'gif' => 'image/gif',
-	        ),
+	        $this->valid_files,
 	        true
 	    )) {
 	        throw new \RuntimeException('Invalid file format.');
 	    }
 
-		if (!file_exists($target_dir)) {
-			mkdir($target_dir);
-		}
-
-		$file_location = sprintf($target_dir.'/%s.%s',
-			sha1_file($file_obj['tmp_name']),
-			$ext
-		);
-
-	    // You should name it uniquely.
-	    // DO NOT USE $file_obj['name'] WITHOUT ANY VALIDATION !!
-	    // On this example, obtain safe unique name from its binary data.
-	    if (!move_uploaded_file(
-	        $file_obj['tmp_name'],
-	        $file_location
-	    )) {
-	        throw new \RuntimeException('Failed to move uploaded file.');
-	    }
-
-	    return $file_location;
+	    return $ext;
 	}
 }
