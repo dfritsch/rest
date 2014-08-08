@@ -65,7 +65,7 @@ abstract class Objects
 	** search - ''
 	*/
 	protected function getList() {
-		$app = Api::getInstance();
+	$app = Api::getInstance();
 		$input = $app->input;
 
 		$data = new \stdClass;
@@ -73,17 +73,6 @@ abstract class Objects
 		$data->limit = $input->get->get('limit', 10, 'INT');
 		$data->sort = $input->get->get('sort', 'created_time', 'STRING');
 		$data->direction = $input->get->get('direction', 'desc', 'STRING');
-
-		//this is specific to the agrilead app
-		$data->start_date = $input->get->get('start_date', '-1 year', 'STRING');
-		$data->end_date = $input->get->get('end_date', 'now', 'STRING');
-		$data->crop = $input->get->get('crop', '', 'STRING');
-		$data->business_name = $input->get->get('business_name', '', 'STRING');
-		$data->customer_name = $input->get->get('customer_name', '', 'STRING');
-		$data->operator = $input->get->get('operator', '', 'STRING');
-		$data->ticket_number = (float) $input->get->get('ticket_number', '', 'STRING');
-		$data->printout_number = (float) $input->get->get('printout_number', '', 'STRING');
-
 
 		if ($data->limit < 1 || $data->limit > 100) {
 			throw new \Exception('Limit exceeds allowed bounds. Should be between 1 and 100', 400);
@@ -94,8 +83,7 @@ abstract class Objects
 
 		$app->appendBody($data);
 
-		//because we pass so many options to the load many function
-		return $this->loadMany($data);
+		return $this->loadMany($data->start, $data->limit, $data->sort, $data->direction);
 	}
 
 	protected function clearData($id = 0) {
@@ -167,7 +155,7 @@ abstract class Objects
 	}
 
 	abstract protected function load($id, $check_agency);
-	abstract protected function loadMany(\stdClass $request);
+	abstract protected function loadMany($limitstart, $limit, $orderCol, $orderDirn);
 	abstract protected function modifyRecord($id);
 
 	function uploadFile($file_obj, $target_dir) {
