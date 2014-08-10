@@ -3,6 +3,7 @@ namespace Webity\Rest\Table;
 
 use Webity\Rest\Application\Api;
 use Webity\Rest\Object\Object;
+use Joomla\Date\Date;
 
 abstract class Table extends Object
 {
@@ -152,7 +153,7 @@ abstract class Table extends Object
 		// If the access property exists, set the default.
 		if (property_exists($this, 'access'))
 		{
-			$this->access = (int) JFactory::getConfig()->get('access');
+			//$this->access = (int) JFactory::getConfig()->get('access');
 		}
 	}
 
@@ -952,7 +953,8 @@ abstract class Table extends Object
 		}
 
 		// Get the current time in the database format.
-		$time = JFactory::getDate()->toSql();
+		$date = new Date();
+		$time = (string)$date;
 
 		// Check the row out by primary key.
 		$query = $this->_db->getQuery(true)
@@ -1147,6 +1149,7 @@ abstract class Table extends Object
 	 */
 	public function isCheckedOut($with = 0, $against = null)
 	{
+		return false;
 		// Handle the non-static case.
 		if (isset($this) && ($this instanceof JTable) && is_null($against))
 		{

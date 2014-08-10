@@ -10,10 +10,18 @@ abstract class Objects
 	protected static $instances = array();
 	protected $data = array();
 	protected $_db = null;
+	protected $name = null;
+	protected $namespace = null;
+	protected $directory = null;
 
 	public function __construct ()
 	{
 		$this->_db = Api::getInstance()->getDbo();
+
+		$rc = new \ReflectionClass(get_class($this));
+		$this->directory = dirname($rc->getFileName());
+		$this->namespace = $rc->getNamespaceName();
+		$this->name = strtolower(basename($this->directory));
 	}
 
 	public function execute() {
@@ -83,7 +91,17 @@ abstract class Objects
 
 		$app->appendBody($data);
 
-		return $this->loadMany($data->start, $data->limit, $data->sort, $data->direction);
+		$object = $this->loadMany($data->start, $data->limit, $data->sort, $data->direction);
+
+		// this means that there are more records
+		if ($data->start > 0) {
+			$object->previous = $app->get('uri.base.full') . $this->name . '?start=' . (($data->start-$data->limit) >= 0 ? $data->start-$data->limit : 0) . '&limit=' . $data->limit;
+		}
+		if ($object->total > $data->limit + $data->start) {
+			$object->next = $app->get('uri.base.full') . $this->name . '?start=' . ($data->start+$data->limit) . '&limit=' . $data->limit;
+		}
+
+		return $object;
 	}
 
 	protected function clearData($id = 0) {
