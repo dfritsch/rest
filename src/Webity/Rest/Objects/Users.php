@@ -86,8 +86,18 @@ class Users extends Objects
 			throw new \Exception('User not found', 404);
 		}
 
-		// mimic JUser from CMS side
-		foreach ($item->data as $key=>$val) {
+		// mimic JUser from CMS side (also allow us to user group_id and organization_id instead of key)
+		foreach ($item->data as $key => $val) {
+			if($key == 'group_key') {
+				$item->data['group_id'] = $item->data[$key];
+				unset($item->data[$key]);
+			}
+
+			if($key == 'organization_key') {
+				$item->data['organization_id'] = $item->data[$key];
+				unset($item->data[$key]);
+			}
+
 			$this->$key = $val;
 		}
 
@@ -130,6 +140,10 @@ class Users extends Objects
 		//remove all of the passwords
 		foreach($items as $key => $item) {
 			unset($items[$key]['password']);
+			$items[$key]['organization_id'] = $items[$key]['organization_key'];
+			unset($items[$key]['organization_key']);
+			$items[$key]['group_id'] = $items[$key]['group_key'];
+			unset($items[$key]['group_key']);
 		}
 
 		// add the total numbers to the result;
