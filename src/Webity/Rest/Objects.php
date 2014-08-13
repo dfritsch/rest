@@ -21,6 +21,7 @@ abstract class Objects
 		$this->_db = $app->getDbo();
 
 		$id = $app->input->get('id');
+		$task = $app->input->get('task'); //a way to do more than just a single thing depending on the request type
 
 		switch ($app->input->getMethod()) {
 			case 'GET':
@@ -29,7 +30,11 @@ abstract class Objects
 				break;
 			case 'POST':
 			case 'PUT':
-				return $this->modifyRecord($id);
+				if(method_exists($this, $task)) {
+					return $this->$task();
+				} else {
+					return $this->modifyRecord($id);
+				}
 				break;
 			case 'DELETE':
 				if ($id) {
