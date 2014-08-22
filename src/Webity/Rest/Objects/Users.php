@@ -68,7 +68,8 @@ class Users extends Objects
 						ug.id AS group_key,
 						ug.title AS group_title,
 						o.id AS organization_key,
-						o.title AS organization_title')
+						o.title AS organization_title,
+						o.state AS organization_state')
 			  ->from($this->users_table . ' AS a')
 			  ->join('LEFT', '#__user_usergroup_map AS ugm ON ugm.user_id = a.id')
 			  ->join('LEFT', '#__usergroups AS ug ON ug.id = ugm.group_id')
