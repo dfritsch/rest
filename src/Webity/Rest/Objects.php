@@ -10,9 +10,15 @@ abstract class Objects
 	protected static $instances = array();
 	protected $data = array();
 	protected $_db = null;
+	protected $directory = '';
+    protected $namespace = '';
 
 	public function __construct ()
 	{
+		$rc = new \ReflectionClass(get_class($this));
+        $this->directory = dirname($rc->getFileName());
+        $this->namespace = $rc->getNamespaceName();
+
 		$this->_db = Api::getInstance()->getDbo();
 	}
 
