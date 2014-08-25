@@ -140,7 +140,13 @@ class Api extends AbstractWebApplication
 
 	public function getBody($asArray = false)
 	{
-		return json_encode($this->response->body);
+		$return = json_encode($this->response->body);
+		
+		if ( $callback = $this->input->get('callback', '', 'STRING') ) {
+			$return = $callback.'('.$return.');';
+		}
+		
+		return $return;
 	}
 
 	public function authenticate() {

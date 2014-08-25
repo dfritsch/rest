@@ -79,21 +79,6 @@ abstract class Objects
 		$data->sort = $input->get->get('sort', 'created_time', 'STRING');
 		$data->direction = $input->get->get('direction', 'desc', 'STRING');
 
-		//this is specific to the agrilead app
-		$start_date = $input->get->get('start_date', '-1 year', 'STRING');
-		$end_date = $input->get->get('end_date', 'now', 'STING');
-
-		$data->start_date = $start_date ? $start_date : '-1 year';
-		$data->end_date = $end_date ? $end_date : 'now';
-		$data->crop = $input->get->get('crop', '', 'STRING');
-		$data->business_name = $input->get->get('business_name', '', 'STRING');
-		$data->customer_name = $input->get->get('customer_name', '', 'STRING');
-		$data->operator = $input->get->get('operator', '', 'STRING');
-		$data->ticket_number = (float) $input->get->get('ticket_number', '', 'STRING');
-		$data->printout_number = (float) $input->get->get('printout_number', '', 'STRING');
-		$data->organization_id = $input->get->get('organization_id', '', 'STRING');
-
-
 		if ($data->limit < 1 || $data->limit > 100) {
 			throw new \Exception('Limit exceeds allowed bounds. Should be between 1 and 100', 400);
 		}
