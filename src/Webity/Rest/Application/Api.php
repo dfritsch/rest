@@ -180,7 +180,9 @@ class Api extends AbstractWebApplication
 			    $query = $db->getQuery(true);
 
 				$query->select('*')
-			    	->from('#__' . $this->get('users_table', 'oauth_users'))
+			    	->from('#__' . $this->get('users_table', 'oauth_users') . ' AS u')
+			    	->leftjoin('#__user_organization_map AS uom ON uom.userId = u.userId')
+			    	->leftjoin('#__Organizations AS o ON o.organizationId = uom.organizationId')
 			    	->where('userName = ' . $db->quote($data['user_id']));
 
 			    $user = $db->setQuery($query, 0, 1)->loadObject();
