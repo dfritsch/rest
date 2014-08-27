@@ -152,6 +152,11 @@ class Users extends Objects
 		}
 
 		if ($id) {
+			//they are wanting to modify an already existing user. check that they are modifying themselves
+			if($api->getUser()->id != $id) {
+				throw new \Exception('Users can only modify their own account', 400);
+			}
+
 			$query = $db->getQuery(true)
 						->select('*')
 						->from($this->users_table)
