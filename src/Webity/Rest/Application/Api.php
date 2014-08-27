@@ -138,7 +138,7 @@ class Api extends AbstractWebApplication
 		return $this;
 	}
 
-	public function getBody()
+	public function getBody($asArray = false)
 	{
 		return json_encode($this->response->body);
 	}
@@ -179,8 +179,10 @@ class Api extends AbstractWebApplication
 			    $db = $this->getDbo();
 			    $query = $db->getQuery(true);
 
-				$query->select('*')
-			    	->from('#__' . $this->get('users_table', 'oauth_users'))
+				$query->select('u.*, o.organizationId, o.title AS organizationTitle')
+			    	->from('#__' . $this->get('users_table', 'oauth_users') . ' AS u')
+			    	->leftjoin('#__user_organization_map AS uom ON uom.userId = u.userId')
+			    	->leftjoin('#__Organizations AS o ON o.organizationId = uom.organizationId')
 			    	->where('userName = ' . $db->quote($data['user_id']));
 
 			    $user = $db->setQuery($query, 0, 1)->loadObject();
