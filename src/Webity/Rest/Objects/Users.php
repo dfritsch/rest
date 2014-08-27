@@ -13,7 +13,7 @@ class Users extends Objects
 {
 	protected $text_fields = array(
 			'username',
-		);
+	);
 	protected $agent_id = 0;
 	protected static $instances = array();
 
@@ -64,41 +64,18 @@ class Users extends Objects
 		// 	->from('#__oauth_users')
 		// 	->where('id = '.(int)$id);
 		//replaced with the other users table
-		$query->select('a.*,
-						ug.id AS group_key,
-						ug.title AS group_title,
-						o.id AS organization_key,
-						o.title AS organization_title')
-			  ->from($this->users_table . ' AS a')
-			  ->join('LEFT', '#__user_usergroup_map AS ugm ON ugm.user_id = a.id')
-			  ->join('LEFT', '#__usergroups AS ug ON ug.id = ugm.group_id')
-			  ->join('LEFT', '#__user_organization_map AS uom ON uom.user_id = a.id')
-			  ->join('LEFT', '#__organizations AS o ON o.id = uom.organization_id');
+		$query->select('a.*')
+			  ->from($this->users_table . ' AS a');
 		if(is_numeric($id)) {
 			$query->where('a.id = ' . (int)$id);
 		} else {
-			$query->where('a.username = "' . $id . '"');
+			$query->where('a.username = ' . $db->quote($id));
 		}
 
 		$item->data = $db->setQuery($query, 0, 1)->loadAssoc();
 
 		if (!$item->data) {
 			throw new \Exception('User not found', 404);
-		}
-
-		// mimic JUser from CMS side (also allow us to user group_id and organization_id instead of key)
-		foreach ($item->data as $key => $val) {
-			if($key == 'group_key') {
-				$item->data['group_id'] = $item->data[$key];
-				unset($item->data[$key]);
-			}
-
-			if($key == 'organization_key') {
-				$item->data['organization_id'] = $item->data[$key];
-				unset($item->data[$key]);
-			}
-
-			$this->$key = $val;
 		}
 
 		// let's not return the password...
@@ -114,24 +91,9 @@ class Users extends Objects
 		$query = $db->getQuery(true);
 		$data = new \stdClass;
 
-		// $query->select('u.id, u.name, u.username, u.email, u.block, u.sendEmail')
-		// 	->from('#__oauth_users as u');
-
 		//load the users
-		$query->select('a.*,
-						ug.id AS group_key,
-						ug.title AS group_title,
-						o.id AS organization_key,
-						o.title AS organization_title')
-			  ->from($this->users_table .' as a')
-			  ->join('LEFT', '#__user_usergroup_map AS ugm ON ugm.user_id = a.id')
-			  ->join('LEFT', '#__usergroups AS ug ON ug.id = ugm.group_id')
-			  ->join('LEFT', '#__user_organization_map AS uom ON uom.user_id = a.id')
-			  ->join('LEFT', '#__organizations AS o ON o.id = uom.organization_id'); //later we should make it so they can select multiple organizations or groups that they're a part of
-
-		if($api->getUser()->organization_id) {
-			$query->where('o.id = ' . (int) $api->getUser()->organization_id);
-		}
+		$query->select('a.*')
+			  ->from($this->users_table .' AS a'); //later we should make it so they can select multiple organizations or groups that they're a part of
 
 		$this->processSearch($query, Api::getInstance()->input->get('users', array(), 'ARRAY'));
 
@@ -140,10 +102,6 @@ class Users extends Objects
 		//remove all of the passwords
 		foreach($items as $key => $item) {
 			unset($items[$key]['password']);
-			$items[$key]['organization_id'] = $items[$key]['organization_key'];
-			unset($items[$key]['organization_key']);
-			$items[$key]['group_id'] = $items[$key]['group_key'];
-			unset($items[$key]['group_key']);
 		}
 
 		// add the total numbers to the result;
@@ -165,7 +123,7 @@ class Users extends Objects
 
 		$query->select('id')
 			->from($this->users_table)
-			->where('userName LIKE '.$db->quote($email) .' OR username LIKE '.$db->quote($email));
+			->where('username LIKE '. $db->quote($email));
 
 		return $db->setQuery($query, 0, 1)->loadResult();
 	}
@@ -177,15 +135,20 @@ class Users extends Objects
 
 		$username = $api->input->post->get('username', null, 'STRING');
 		$password = $api->input->post->get('password', null, 'STRING');
-		$name = $api->input->post->get('name', null, 'STRING');
+		$first = $api->input->post->get('first', null, 'STRING');
+		$last = $api->input->post->get('last', null, 'STRING');
 		//we need more than just username and password. we also need to link organization and group
 
 		if (is_null($username) && !$id) {
-			throw new \Exception('Missing required field "username"', 400);
+			throw new \Exception('Missing required field "email"', 400);
 		}
 
-		if (is_null($name) && !$id) {
-			throw new \Exception('Missing required field "name"', 400);
+		if (is_null($first) && !$id) {
+			throw new \Exception('Missing required field "first name"', 400);
+		}
+
+		if (is_null($last) && !$id) {
+			throw new \Exception('Missing required field "last name"', 400);
 		}
 
 		if ($id) {
@@ -220,7 +183,8 @@ class Users extends Objects
 		// only overwrite values if they change
 		$data->username = $username ? $username : $data->username;
 		$data->password = $password ? $hasher->create($password, PasswordInterface::JOOMLA) : $data->password;
-		$data->name = $name ? $name : $data->name;
+		$data->first = $first ? $first : $data->first;
+		$data->last = $last ? $last : $data->last;
 
 		if ($data->id) {
 			$db->updateObject($this->users_table, $data, 'id');
