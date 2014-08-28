@@ -10,6 +10,7 @@ abstract class Objects
 	protected static $instances = array();
 	protected $data = array();
 	protected $_db = null;
+	protected $isPrivate = true;
 
 	public function __construct ()
 	{
@@ -19,6 +20,8 @@ abstract class Objects
 	public function execute() {
 		$app = Api::getInstance();
 		$this->_db = $app->getDbo();
+
+		$this->checkPrivate(); //so we can check if a resource requires user authentication...
 
 		$id = $app->input->get('id');
 		$task = $app->input->get('task'); //a way to do more than just a single thing depending on the request type
@@ -229,5 +232,14 @@ abstract class Objects
 	    }
 
 	    return $file_location;
+	}
+
+	protected function checkPrivate() {
+		if($this->isPrivate) {
+			//now we need to check if the user is logged in
+			if(!Api::getInstance()->getUser()) {
+				throw new \Exception('This object is private. Token must be authenticated by a user', 401);
+			}
+		}
 	}
 }

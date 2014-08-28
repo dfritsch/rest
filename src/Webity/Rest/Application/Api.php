@@ -182,20 +182,25 @@ class Api extends AbstractWebApplication
 				$server = OauthServer::getInstance();
 				$data = $server->handleResource();
 
-			    $db = $this->getDbo();
-			    $query = $db->getQuery(true);
+				if(!is_null($data['user_id'])) {
 
-				$query->select('*')
-			    	->from('#__' . $this->get('users_table', 'oauth_users'))
-			    	->where('id = ' . (int)$data['user_id'] );
+				    $db = $this->getDbo();
+				    $query = $db->getQuery(true);
 
-			    $user = $db->setQuery($query, 0, 1)->loadObject();
+					$query->select('*')
+				    	->from('#__' . $this->get('users_table', 'oauth_users'))
+				    	->where('id = ' . (int)$data['user_id'] );
 
-			    if (!$user) {
-			    	throw new \Exception('User not found.', 401);
-			    }
+				    $user = $db->setQuery($query, 0, 1)->loadObject();
 
-			    $this->setUser($user);
+				    if (!$user) {
+				    	throw new \Exception('User not found.', 401);
+				    }
+
+				    $this->setUser($user);
+				} else if(!$data['access_token']) {
+					throw new \Exception('Invalid token', 401);
+				}
 			} else {
 				if (isset($_SERVER['PHP_AUTH_USER'])) {
 				    $username = $_SERVER['PHP_AUTH_USER'];

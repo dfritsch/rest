@@ -16,7 +16,7 @@ class Users extends Objects
 	);
 	protected $agent_id = 0;
 	protected static $instances = array();
-
+	protected $isPrivate = false; //so that clients can access it without needed to be logged in with a user
 	protected $users_table; //so we don't have to keep calling api over and over again
 
 	public function __construct ()
