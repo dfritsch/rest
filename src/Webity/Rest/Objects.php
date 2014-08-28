@@ -55,12 +55,12 @@ abstract class Objects
 	*/
 	protected function getData($id = 0, $check_agency = true)
 	{
-		if (empty(self::$data[$id]) || self::$data[$id]->simple)
+		if (empty($this->data[$id]) || $this->data[$id]->simple)
 		{
-			self::$data[$id] = $this->load($id, $check_agency);
+			$this->data[$id] = $this->load($id, $check_agency);
 		}
 
-		return self::$data[$id];
+		return $this->data[$id];
 	}
 
 	/*
@@ -166,6 +166,9 @@ abstract class Objects
 	abstract protected function modifyRecord($id);
 
 	function uploadFile($file_obj, $target_dir) {
+		return $this->uploadFileS3($file_obj, $target_dir);
+		// override this funtion
+
 	    $ext = $this->validateFile($file_obj);
 
 		if (!file_exists($target_dir)) {
@@ -201,19 +204,28 @@ abstract class Objects
 				$ext
 			);
 			// Instantiate the client.
-			$s3 = S3Client::factory();
+			$s3 = S3Client::factory(array(
+				'key'    => $api->get('aws.key'),
+				'secret' => $api->get('aws.secret'),
+			));
+
+			$file = $file_location;
+			// trim off JPATH_ROOT/web if it exists at the start
+			if (strpos($file_location, JPATH_ROOT . '/web/') === 0) {
+				$file = substr($file_location, strlen(JPATH_ROOT . '/web/'));
+			}
 
 			try {
-				    // Upload data.
-				    $result = $s3->putObject(array(
-				        'Bucket' => $api->get('aws.bucket'),
-				        'Key'    => $api->get('aws.key'),
-				        'SourceFile'   => $file_location,
-				        'ACL'    => 'public-read'
-			    	));
+			    // Upload data.
+			    $result = $s3->putObject(array(
+			        'Bucket' => $api->get('aws.bucket'),
+			        'Key'    => $file,
+			        'SourceFile'   => $file_obj['tmp_name'],
+			        'ACL'    => 'public-read'
+		    	));
 
-			    	// Print the URL to the object.
-			    	return $result['ObjectURL'];
+		    	// Print the URL to the object.
+		    	return $result['ObjectURL'];
 			} catch (S3Exception $e) {
 			    return $e->getMessage();
 			}
@@ -246,26 +258,22 @@ abstract class Objects
 	    }
 
 	    // You should also check filesize here.
-	    if ($file_obj['size'] > 268435456) {
-	        throw new \RuntimeException('Exceeded arbitrary filesize limit.');
+	    if ($file_obj['size'] > 512000000) {
+	        throw new \RuntimeException('Exceeded filesize limit.');
 	    }
 
 	    // DO NOT TRUST $file_obj['mime'] VALUE !!
 	    // Check MIME Type by yourself.
-	    $finfo = new \finfo(FILEINFO_MIME_TYPE);
-	    if (false === $ext = array_search(
-	        $finfo->file($file_obj['tmp_name']),
-	        $this->valid_files,
-	        array(
-	            'jpg' => 'image/jpeg',
-	            'png' => 'image/png',
-	            'gif' => 'image/gif',
-				'mp4' => 'video/mp4',
-	        ),
-	        true
-	    )) {
-	        throw new \RuntimeException('Invalid file format.');
-	    }
+	    // $finfo = new \finfo(FILEINFO_MIME_TYPE);
+	    // if (false === $ext = array_search(
+	    //     $finfo->file($file_obj['tmp_name']),
+	    //     $this->valid_files,
+	    //     true
+	    // )) {
+	    //     throw new \RuntimeException('Invalid file format.');
+	    // }
+
+		$ext = pathinfo($file_obj['name'], PATHINFO_EXTENSION);
 
 	    return $ext;
 	}
