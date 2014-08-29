@@ -28,7 +28,12 @@ class Server
 		$this->server->addGrantType(new \OAuth2\GrantType\UserCredentials($this->storage));
 
 		// Add the "RefreshToken" grant type (this allows prolonged access)
-		$this->server->addGrantType(new \OAuth2\GrantType\RefreshToken($this->storage));
+		$this->server->addGrantType(
+			new \OAuth2\GrantType\RefreshToken(
+				$this->storage, 
+				array('always_issue_new_refresh_token' => true)
+			)
+		);
 	}
 
 	public static function getInstance($id = 1)
