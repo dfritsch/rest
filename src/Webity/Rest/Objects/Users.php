@@ -206,8 +206,8 @@ class Users extends Objects
 
 			foreach($questions as $question) {
 				$q = new \stdClass;
-				$q->userId = $data->id;
-				$q->questionId = $question->id;
+				$q->user_id = $data->id;
+				$q->question_id = $question->id;
 
 				$db->insertObject('#__user_question_map', $q);
 			}
