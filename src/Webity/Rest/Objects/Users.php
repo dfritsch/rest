@@ -196,6 +196,21 @@ class Users extends Objects
 		} else {
 			$db->insertObject($this->users_table, $data);
 			$data->id = $db->insertid();
+
+			//now we need to initialize the user_question_map table
+			$query->clear()
+				  ->select('q.id')
+				  ->from('#__questions AS q');
+
+			$questions = $db->setQuery($query)->loadObjectList();
+
+			foreach($questions as $question) {
+				$q = new \stdClass;
+				$q->userId = $data->id;
+				$q->questionId = $question->id;
+
+				$db->insertObject('#__user_question_map', $q);
+			}
 		}
 
 		return $data;
