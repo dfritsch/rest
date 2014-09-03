@@ -209,7 +209,7 @@ abstract class Objects
 	    }
 
 	    // You should also check filesize here.
-	    if ($file_obj['size'] > 1000000) {
+	    if ($file_obj['size'] > 100000000) {
 	        throw new \RuntimeException('Exceeded filesize limit.');
 	    }
 
