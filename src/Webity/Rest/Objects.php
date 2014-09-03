@@ -97,7 +97,7 @@ abstract class Objects
 		$data->operator = $input->get->get('operator', '', 'STRING');
 		$data->ticket_number = (float) $input->get->get('ticket_number', '', 'STRING');
 		$data->printout_number = (float) $input->get->get('printout_number', '', 'STRING');
-		$data->organization_id = $input->get->get('organization_id', '', 'STRING');
+		$data->organization_id = $input->get->get('organization_id', $app->getUser()->organization_id, 'STRING');
 
 
 		if ($data->limit < 1 || $data->limit > 100) {
@@ -233,6 +233,8 @@ abstract class Objects
 		if (!file_exists($target_dir)) {
 			mkdir($target_dir);
 		}
+
+		$ext = strtolower(pathinfo($file_obj['name'], PATHINFO_EXTENSION));
 
 		$file_location = sprintf($target_dir.'/%s.%s',
 			sha1_file($file_obj['tmp_name']),
