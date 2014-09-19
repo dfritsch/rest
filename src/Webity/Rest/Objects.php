@@ -23,7 +23,7 @@ abstract class Objects
 
 		$this->checkPrivate(); //so we can check if a resource requires user authentication...
 
-		$id = $app->input->get('id');
+		$id = $app->input->get('id', null, 'PASSWORD');
 		$task = $app->input->get('task'); //a way to do more than just a single thing depending on the request type
 
 		switch ($app->input->getMethod()) {
@@ -81,6 +81,7 @@ abstract class Objects
 		$data->limit = $input->get->get('limit', 10, 'INT');
 		$data->sort = $input->get->get('sort', 'created_time', 'STRING');
 		$data->direction = $input->get->get('direction', 'desc', 'STRING');
+		$data->isOn = $input->get->get('isOn', null, 'STRING');
 
 		if ($data->limit < 1 || $data->limit > 100) {
 			throw new \Exception('Limit exceeds allowed bounds. Should be between 1 and 100', 400);
