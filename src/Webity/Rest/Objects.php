@@ -86,11 +86,8 @@ abstract class Objects
 		$data->direction = $input->get->get('direction', 'desc', 'STRING');
 
 		//this is specific to the agrilead app
-		$start_date = $input->get->get('start_date', '-1 year', 'STRING');
-		$end_date = $input->get->get('end_date', 'now', 'STING');
-
-		$data->start_date = $start_date ? $start_date : '-1 year';
-		$data->end_date = $end_date ? $end_date : 'now';
+		$data->start_date = $input->get->get('start_date', '', 'STRING');
+		$data->end_date = $input->get->get('end_date', '', 'STING');
 		$data->crop = $input->get->get('crop', '', 'STRING');
 		$data->business_name = $input->get->get('business_name', '', 'STRING');
 		$data->customer_name = $input->get->get('customer_name', '', 'STRING');
