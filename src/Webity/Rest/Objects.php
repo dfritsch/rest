@@ -91,7 +91,7 @@ abstract class Objects
 		$data->crop = $input->get->get('crop', '', 'STRING');
 		$data->business_name = $input->get->get('business_name', '', 'STRING');
 		$data->customer_name = $input->get->get('customer_name', '', 'STRING');
-		$data->operator = $input->get->get('operator', '', 'STRING');
+		$data->operator = $input->get->get('operator_name', '', 'STRING');
 		$data->ticket_number = (float) $input->get->get('ticket_number', '', 'STRING');
 		$data->printout_number = (float) $input->get->get('printout_number', '', 'STRING');
 		$data->organization_id = $input->get->get('organization_id', $app->getUser()->organization_id, 'STRING');
