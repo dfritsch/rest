@@ -7,42 +7,42 @@ use Webity\Rest\Application\Api;
 
 class Storage extends Pdo
 {
-	public function __construct($connection = array(), $config = array())
+    public function __construct($connection = array(), $config = array())
     {
-    	$app = Api::getInstance();
+        $app = Api::getInstance();
 
         $host = $app->get('database.host');
         $user = $app->get('database.user');
         $password = $app->get('database.password');
         $database = $app->get('database.name');
 
-    	$connection = array_merge(
-    		array(
-    			'dsn' => 'mysql:dbname='.$database.';host='.$host, 
-    			'username' => $user, 
-    			'password' => $password
-    		),
-    		$connection
-    	);
+        $connection = array_merge(
+            array(
+                'dsn' => 'mysql:dbname='.$database.';host='.$host, 
+                'username' => $user, 
+                'password' => $password
+            ),
+            $connection
+        );
 
-    	parent::__construct($connection, $config);
+        parent::__construct($connection, $config);
 
-    	$prefix = $app->get('database.prefix', 'jos_');
+        $prefix = $app->get('database.prefix', 'jos_');
 
-    	$this->config = array_merge(
-    		$this->config,
-	    	array(
-	            'client_table' => $prefix . 'oauth_clients',
-	            'access_token_table' => $prefix . 'oauth_access_tokens',
-	            'refresh_token_table' => $prefix . 'oauth_refresh_tokens',
-	            'code_table' => $prefix . 'oauth_authorization_codes',
-	            'user_table' => $prefix . $app->get('users_table', 'oauth_users'),
-	            'jwt_table'  => $prefix . 'oauth_jwt',
-	            'scope_table'  => $prefix . 'oauth_scopes',
-	            'public_key_table'  => $prefix . 'oauth_public_keys',
-	        ), 
-	        $config
-	    );
+        $this->config = array_merge(
+            $this->config,
+            array(
+                'client_table' => $prefix . 'oauth_clients',
+                'access_token_table' => $prefix . 'oauth_access_tokens',
+                'refresh_token_table' => $prefix . 'oauth_refresh_tokens',
+                'code_table' => $prefix . 'oauth_authorization_codes',
+                'user_table' => $prefix . $app->get('users_table', 'oauth_users'),
+                'jwt_table'  => $prefix . 'oauth_jwt',
+                'scope_table'  => $prefix . 'oauth_scopes',
+                'public_key_table'  => $prefix . 'oauth_public_keys',
+            ), 
+            $config
+        );
     }
 
     public function getUser($username)
@@ -56,7 +56,7 @@ class Storage extends Pdo
 
         // the default behavior is to use "username" as the user_id
         return array_merge(array(
-            'user_id' => $username
+            'user_id' => $userInfo['id']
         ), $userInfo);
     }
 
@@ -64,9 +64,9 @@ class Storage extends Pdo
     protected function checkPassword($user, $password)
     {
         $crypt = new \Joomla\Crypt\Password\Simple();
-		$auth = $crypt->verify($password, $user['password']);
+        $auth = $crypt->verify($password, $user['password']);
 
-		return $auth;
+        return $auth;
     }
 
     /* OAuth2\Storage\ClientCredentialsInterface */
@@ -77,7 +77,7 @@ class Storage extends Pdo
         $result = $stmt->fetch();
 
         $crypt = new \Joomla\Crypt\Password\Simple();
-		$auth = $crypt->verify($client_secret, $result['client_secret']);
+        $auth = $crypt->verify($client_secret, $result['client_secret']);
 
         // make this extensible
         return $result && $auth;

@@ -140,7 +140,13 @@ class Api extends AbstractWebApplication
 
 	public function getBody($asArray = false)
 	{
-		return json_encode($this->response->body);
+		$return = json_encode($this->response->body);
+
+		if ( $callback = $this->input->get('callback', '', 'STRING') ) {
+			$return = $callback.'('.$return.');';
+		}
+
+		return $return;
 	}
 
 	public function authenticate() {
@@ -176,13 +182,17 @@ class Api extends AbstractWebApplication
 				$server = OauthServer::getInstance();
 				$data = $server->handleResource();
 
-			    $user = $this->loadUser($data['user_id']);
+				if(!is_null($data['user_id'])) {
+					$user = $this->loadUser($data['user_id']);
 
-			    if (!$user) {
-			    	throw new \Exception('User not found.', 401);
-			    }
+				    if (!$user) {
+				    	throw new \Exception('User not found.', 401);
+				    }
 
-			    $this->setUser($user);
+				    $this->setUser($user);
+				} else if(!$data['access_token']) {
+					throw new \Exception('Invalid token', 401);
+				}
 			} else {
 				if (isset($_SERVER['PHP_AUTH_USER'])) {
 				    $username = $_SERVER['PHP_AUTH_USER'];

@@ -19,6 +19,7 @@ abstract class Objects
 	    'png' => 'image/png',
 	    'gif' => 'image/gif',
 	);
+	protected $isPrivate = true;
 
 	public function __construct ()
 	{
@@ -32,6 +33,8 @@ abstract class Objects
 	public function execute() {
 		$app = Api::getInstance();
 		$this->_db = $app->getDbo();
+
+		$this->checkPrivate(); //so we can check if a resource requires user authentication...
 
 		$id = $app->input->get('id');
 		$task = $app->input->get('task'); //a way to do more than just a single thing depending on the request type
@@ -91,18 +94,6 @@ abstract class Objects
 		$data->limit = $input->get->get('limit', 10, 'INT');
 		$data->sort = $input->get->get('sort', 'created_time', 'STRING');
 		$data->direction = $input->get->get('direction', 'desc', 'STRING');
-
-		//this is specific to the agrilead app
-		$data->start_date = $input->get->get('start_date', '', 'STRING');
-		$data->end_date = $input->get->get('end_date', '', 'STING');
-		$data->crop = $input->get->get('crop', '', 'STRING');
-		$data->business_name = $input->get->get('business_name', '', 'STRING');
-		$data->customer_name = $input->get->get('customer_name', '', 'STRING');
-		$data->operator = $input->get->get('operator_name', '', 'STRING');
-		$data->ticket_number = (float) $input->get->get('ticket_number', '', 'STRING');
-		$data->printout_number = (float) $input->get->get('printout_number', '', 'STRING');
-		$data->organization_id = $input->get->get('organization_id', $app->getUser()->organization_id, 'STRING');
-
 
 		if ($data->limit < 1 || $data->limit > 100) {
 			throw new \Exception('Limit exceeds allowed bounds. Should be between 1 and 100', 400);
@@ -297,5 +288,14 @@ abstract class Objects
 		$ext = pathinfo($file_obj['name'], PATHINFO_EXTENSION);
 
 	    return $ext;
+	}
+
+	protected function checkPrivate() {
+		if($this->isPrivate) {
+			//now we need to check if the user is logged in
+			if(!Api::getInstance()->getUser()) {
+				throw new \Exception('This object is private. Token must be authenticated by a user', 401);
+			}
+		}
 	}
 }
