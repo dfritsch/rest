@@ -3,6 +3,8 @@ namespace Webity\Rest;
 
 use Webity\Rest\Application\Api;
 use Webity\Rest\Objects\User;
+use Aws\S3\S3Client;
+use Aws\S3\Exception\S3Exception;
 
 abstract class Objects
 {
@@ -12,6 +14,11 @@ abstract class Objects
 	protected $_db = null;
 	protected $directory = '';
     protected $namespace = '';
+	protected $valid_files = array(
+		'jpg' => 'image/jpeg',
+	    'png' => 'image/png',
+	    'gif' => 'image/gif',
+	);
 
 	public function __construct ()
 	{
@@ -183,7 +190,73 @@ abstract class Objects
 	abstract protected function modifyRecord($id);
 
 	function uploadFile($file_obj, $target_dir) {
-	    // Undefined | Multiple Files | $_FILES Corruption Attack
+	    $ext = $this->validateFile($file_obj);
+
+		if (!file_exists($target_dir)) {
+			mkdir($target_dir);
+		}
+
+		$file_location = sprintf($target_dir.'/%s.%s',
+			sha1_file($file_obj['tmp_name']),
+			$ext
+		);
+
+	    // You should name it uniquely.
+	    // DO NOT USE $file_obj['name'] WITHOUT ANY VALIDATION !!
+	    // On this example, obtain safe unique name from its binary data.
+	    if (!move_uploaded_file(
+	        $file_obj['tmp_name'],
+	        $file_location
+	    )) {
+	        throw new \RuntimeException('Failed to move uploaded file.');
+	    }
+
+	    return $file_location;
+	}
+
+	function uploadFileS3($file_obj, $target_dir) {
+		$ext = $this->validateFile($file_obj);
+		$api = Api::getInstance();
+
+		if( !empty($api->get('aws.bucket')) && !empty($api->get('aws.key')) ) {
+
+			$file_location = sprintf($target_dir.'/%s.%s',
+				sha1_file($file_obj['tmp_name']),
+				$ext
+			);
+			// Instantiate the client.
+			$s3 = S3Client::factory(array(
+				'key'    => $api->get('aws.key'),
+				'secret' => $api->get('aws.secret'),
+			));
+
+			$file = $file_location;
+			// trim off JPATH_ROOT/web if it exists at the start
+			if (strpos($file_location, JPATH_ROOT . '/web/') === 0) {
+				$file = substr($file_location, strlen(JPATH_ROOT . '/web/'));
+			}
+
+			try {
+			    // Upload data.
+			    $result = $s3->putObject(array(
+			        'Bucket' => $api->get('aws.bucket'),
+			        'Key'    => $file,
+			        'SourceFile'   => $file_obj['tmp_name'],
+			        'ACL'    => 'public-read'
+		    	));
+
+		    	// Print the URL to the object.
+		    	return $result['ObjectURL'];
+			} catch (S3Exception $e) {
+			    return $e->getMessage();
+			}
+		}
+
+		return 'amazon configuration has not been set correctly';
+	}
+
+	protected function validateFile($file_obj) {
+		// Undefined | Multiple Files | $_FILES Corruption Attack
 	    // If this request falls under any of them, treat it invalid.
 	    if (
 	        !isset($file_obj['error']) ||
@@ -206,7 +279,7 @@ abstract class Objects
 	    }
 
 	    // You should also check filesize here.
-	    if ($file_obj['size'] > 100000000) {
+	    if ($file_obj['size'] > 512000000) {
 	        throw new \RuntimeException('Exceeded filesize limit.');
 	    }
 
@@ -215,39 +288,14 @@ abstract class Objects
 	    // $finfo = new \finfo(FILEINFO_MIME_TYPE);
 	    // if (false === $ext = array_search(
 	    //     $finfo->file($file_obj['tmp_name']),
-	    //     array(
-	    //         'jpg' => 'image/jpeg',
-	    //         'png' => 'image/png',
-	    //         'gif' => 'image/gif',
-		// 		'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-		//  		'xls' => 'application/octet-stream'
-	    //     ),
+	    //     $this->valid_files,
 	    //     true
 	    // )) {
 	    //     throw new \RuntimeException('Invalid file format.');
 	    // }
 
-		if (!file_exists($target_dir)) {
-			mkdir($target_dir);
-		}
+		$ext = pathinfo($file_obj['name'], PATHINFO_EXTENSION);
 
-		$ext = strtolower(pathinfo($file_obj['name'], PATHINFO_EXTENSION));
-
-		$file_location = sprintf($target_dir.'/%s.%s',
-			sha1_file($file_obj['tmp_name']),
-			$ext
-		);
-
-	    // You should name it uniquely.
-	    // DO NOT USE $file_obj['name'] WITHOUT ANY VALIDATION !!
-	    // On this example, obtain safe unique name from its binary data.
-	    if (!move_uploaded_file(
-	        $file_obj['tmp_name'],
-	        $file_location
-	    )) {
-	        throw new \RuntimeException('Failed to move uploaded file.');
-	    }
-
-	    return $file_location;
+	    return $ext;
 	}
 }
