@@ -66,6 +66,7 @@ class Users extends Objects
 		//replaced with the other users table
 		$query->select('a.*')
 			  ->from($this->users_table . ' AS a');
+
 		if(is_numeric($id)) {
 			$query->where('a.id = ' . (int)$id);
 		} else {

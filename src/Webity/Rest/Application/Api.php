@@ -141,11 +141,11 @@ class Api extends AbstractWebApplication
 	public function getBody($asArray = false)
 	{
 		$return = json_encode($this->response->body);
-		
+
 		if ( $callback = $this->input->get('callback', '', 'STRING') ) {
 			$return = $callback.'('.$return.');';
 		}
-		
+
 		return $return;
 	}
 
@@ -183,15 +183,7 @@ class Api extends AbstractWebApplication
 				$data = $server->handleResource();
 
 				if(!is_null($data['user_id'])) {
-
-				    $db = $this->getDbo();
-				    $query = $db->getQuery(true);
-
-					$query->select('*')
-				    	->from('#__' . $this->get('users_table', 'oauth_users'))
-				    	->where('id = ' . (int)$data['user_id'] );
-
-				    $user = $db->setQuery($query, 0, 1)->loadObject();
+					$user = $this->loadUser($data['user_id']);
 
 				    if (!$user) {
 				    	throw new \Exception('User not found.', 401);
@@ -238,6 +230,19 @@ class Api extends AbstractWebApplication
 
 		$this->markDebug('Complete Authentication');
 		return $this;
+	}
+
+	public function loadUser($id) {
+		$db = $this->getDbo();
+		$query = $db->getQuery(true);
+
+		$query->select('*')
+			->from('#__' . $this->get('users_table', 'oauth_users'))
+			->where('username = ' . $db->quote($id));
+
+		$user = $db->setQuery($query, 0, 1)->loadObject();
+
+		return $user;
 	}
 
 	public function setUser($user) {
