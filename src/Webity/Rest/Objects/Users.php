@@ -136,11 +136,22 @@ class Users extends Objects
 
 		$username = $api->input->post->get('username', null, 'STRING');
 		$password = $api->input->post->get('password', null, 'STRING');
+        $public_url = $api->input->post->get('public_url', null, 'STRING');
 		$first = $api->input->post->get('first', null, 'STRING');
 		$last = $api->input->post->get('last', null, 'STRING');
+        $email = $api->input->post->get('email', null, 'STRING');
+        $website = $api->input->post->get('website', null, 'STRING');
+        $phone = $api->input->post->get('phone', null, 'STRING');
+        
+        
+        
 		//we need more than just username and password. we also need to link organization and group
 
 		if (is_null($username) && !$id) {
+			throw new \Exception('Missing required field "email"', 400);
+		}
+        
+        if (is_null($public_url) && !$id) {
 			throw new \Exception('Missing required field "email"', 400);
 		}
 
@@ -191,6 +202,27 @@ class Users extends Objects
 		$data->password = $password ? $hasher->create($password, PasswordInterface::JOOMLA) : $data->password;
 		$data->first = $first ? $first : $data->first;
 		$data->last = $last ? $last : $data->last;
+        $data->email = $email ? $email : $data->email;
+        $data->website = $website ? $website : $data->website;
+        $data->phone  = $phone ? $phone : $data->phone;
+        
+        $company_photo = $api->input->files->get('company_logo');
+        if (is_array($company_photo) && $company_photo['name']) {
+            //NOTE: /public_html/uploads for live site. remove /public_html for localhost
+            $company_photo = $this->uploadFile($company_photo, JPATH_ROOT . '/uploads');
+            if ($company_photo) {
+                $data->company_photo = substr($company_photo, strlen(JPATH_ROOT . '/'));
+            }
+        }
+        
+        $photo = $api->input->files->get('photo');
+        if (is_array($photo) && $photo['name']) {
+            //NOTE: /public_html/uploads for live site. remove /public_html for localhost
+            $photo = $this->uploadFile($photo, JPATH_ROOT . '/uploads');
+            if ($company_photo) {
+                $data->photo = substr($photo, strlen(JPATH_ROOT . '/'));
+            }
+        }
 
 		if ($data->id) {
 			$db->updateObject($this->users_table, $data, 'id');
