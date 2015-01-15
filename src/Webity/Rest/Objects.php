@@ -18,6 +18,9 @@ abstract class Objects
 		'jpg' => 'image/jpeg',
 	    'png' => 'image/png',
 	    'gif' => 'image/gif',
+        'mov' => 'video/mov',
+        'mp4' => 'video/mp4',
+        'm4v' => 'video/m4v',
 	);
 	protected $isPrivate = true;
 
@@ -181,8 +184,8 @@ abstract class Objects
 	abstract protected function loadMany(\stdClass $request);
 	abstract protected function modifyRecord($id);
 
-	function uploadFile($file_obj, $target_dir) {
-	    $ext = $this->validateFile($file_obj);
+	function uploadFile($file_obj, $target_dir, $valid_files = null) {
+	    $ext = $this->validateFile($file_obj, $valid_files);
 
 		if (!file_exists($target_dir)) {
 			mkdir($target_dir);
@@ -206,7 +209,7 @@ abstract class Objects
 	    return $file_location;
 	}
 
-	function uploadFileS3($file_obj, $target_dir) {
+	function uploadFileS3($file_obj, $target_dir, $valid_files = null) {
 		$ext = $this->validateFile($file_obj);
 		$api = Api::getInstance();
 
@@ -247,7 +250,7 @@ abstract class Objects
 		return 'amazon configuration has not been set correctly';
 	}
 
-	protected function validateFile($file_obj) {
+	protected function validateFile($file_obj, $valid_files) {
 		// Undefined | Multiple Files | $_FILES Corruption Attack
 	    // If this request falls under any of them, treat it invalid.
 	    if (
@@ -277,14 +280,18 @@ abstract class Objects
 
 	    // DO NOT TRUST $file_obj['mime'] VALUE !!
 	    // Check MIME Type by yourself.
-	    // $finfo = new \finfo(FILEINFO_MIME_TYPE);
-	    // if (false === $ext = array_search(
-	    //     $finfo->file($file_obj['tmp_name']),
-	    //     $this->valid_files,
-	    //     true
-	    // )) {
-	    //     throw new \RuntimeException('Invalid file format.');
-	    // }
+        if(is_null($valid_files)) {
+            $valid_files = $this->valid_files;
+        }
+        
+	     $finfo = new \finfo(FILEINFO_MIME_TYPE);
+	     if (false === $ext = array_search(
+	         $finfo->file($file_obj['tmp_name']),
+	         $valid_files,
+	         true
+	     )) {
+	         throw new \RuntimeException('Invalid file format.');
+	     }
 
 		$ext = pathinfo($file_obj['name'], PATHINFO_EXTENSION);
 
