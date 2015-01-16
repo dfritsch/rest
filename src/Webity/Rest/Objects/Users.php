@@ -152,7 +152,7 @@ class Users extends Objects
 		}
         
         if (is_null($public_url) && !$id) {
-			throw new \Exception('Missing required field "email"', 400);
+			throw new \Exception('Missing required field "custom url"', 400);
 		}
 
 		if (is_null($first) && !$id) {
@@ -182,17 +182,26 @@ class Users extends Objects
 		} else {
 			//first let's check if the username has already been taken or not...
 			$query = $db->getQuery(true)
-						->select('id')
+						->select(array(
+							'id',
+							'username',
+							'public_url'
+						))
 						->from($this->users_table)
-						->where('username = ' . $db->quote($username) );
+						->where('username = ' . $db->quote($username) . ' OR public_url = ' . $db->quote($public_url));
 
 			$user = $db->setQuery($query)->loadObject();
 
-			if($user) {
-				throw new \Exception('A user with that username has already been taken', 400);
+			if($user->username == $username) {
+				throw new \Exception('Another user already has that username', 400);
+			} else if($user->public_url == $public_url) {
+				throw new \Exception('Another user has claimed that custom URL', 400);
 			}
 
 			$data = new \stdClass;
+			
+			// We only let them set their custom URL when they create their account
+			$data->public_url = $public_url;
 		}
 
 		$hasher = new Simple;
