@@ -96,7 +96,10 @@ class Api extends AbstractWebApplication
 		return self::$instances[$id];
 	}
 
-	public function getDbo() {
+    /**
+     * @return Database\DatabaseFactory
+     */
+    public function getDbo() {
 		if (is_null($this->db)) {
 			$this->initialiseDbo();
 		}

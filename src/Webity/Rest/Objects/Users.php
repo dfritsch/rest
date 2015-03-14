@@ -98,7 +98,7 @@ class Users extends Objects
 
 		$this->processSearch($query, Api::getInstance()->input->get('users', array(), 'ARRAY'));
 
-		$items = $db->setQuery($query, $limitstart, $limit)->loadAssocList();
+		$items = $db->setQuery($query, $request->start, $request->limit)->loadAssocList();
 
 		//remove all of the passwords
 		foreach($items as $key => $item) {

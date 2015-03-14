@@ -37,6 +37,7 @@ class Storage extends Pdo
                 'refresh_token_table' => $prefix . 'oauth_refresh_tokens',
                 'code_table' => $prefix . 'oauth_authorization_codes',
                 'user_table' => $prefix . $app->get('users_table', 'oauth_users'),
+                'user_key' => $app->get('user_key', 'id'),
                 'jwt_table'  => $prefix . 'oauth_jwt',
                 'scope_table'  => $prefix . 'oauth_scopes',
                 'public_key_table'  => $prefix . 'oauth_public_keys',
@@ -56,7 +57,7 @@ class Storage extends Pdo
 
         // the default behavior is to use "username" as the user_id
         return array_merge(array(
-            'user_id' => $userInfo['id']
+            'user_id' => $userInfo[$this->config['user_key']]
         ), $userInfo);
     }
 
