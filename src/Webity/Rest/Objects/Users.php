@@ -17,13 +17,18 @@ class Users extends Objects
 	protected $agent_id = 0;
 	protected static $instances = array();
 	protected $isPrivate = false; //so that clients can access it without needed to be logged in with a user
-	protected $users_table; //so we don't have to keep calling api over and over again
+	protected static $users_table; //so we don't have to keep calling api over and over again
 
 	public function __construct ()
 	{
-		$this->users_table = '#__' . Api::getInstance()->get('users_table', 'oauth_users');
+		$this->setUsersTable();
 		parent::__construct();
 	}
+
+    private static function setUsersTable()
+    {
+        self::$users_table = '#__' . Api::getInstance()->get('users_table', 'oauth_users');
+    }
 
 	public static function getInstance($identifier = 0)
 	{
@@ -115,6 +120,10 @@ class Users extends Objects
 	}
 
 	static public function checkEmail($email) {
+        if (is_null(self::$users_table)) {
+            self::setUsersTable();
+        }
+
 		$db = Api::getInstance()->getDbo();
 		$query = $db->getQuery(true);
 
@@ -123,7 +132,7 @@ class Users extends Objects
 		// 	->where('email LIKE '.$db->quote($email) .' OR username LIKE '.$db->quote($email));
 
 		$query->select('id')
-			->from($this->users_table)
+			->from(self::$users_table)
 			->where('username LIKE '. $db->quote($email));
 
 		return $db->setQuery($query, 0, 1)->loadResult();

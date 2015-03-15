@@ -85,6 +85,10 @@ class Api extends AbstractWebApplication
         );
 	}
 
+    /**
+     * @param int $id
+     * @return Api
+     */
 	public static function getInstance($id = 1)
 	{
 		if (empty(self::$instances[$id]))
