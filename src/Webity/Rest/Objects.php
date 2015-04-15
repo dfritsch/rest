@@ -290,6 +290,37 @@ abstract class Objects
 
 	    return $ext;
 	}
+    
+    /**
+     This method is used to sync tables by passing an array of ids that should be associated with the id of another table
+     */
+    protected function syncAssociativeTable($associativeTable, $single_column, $many_column, $single_column_id, $many_column_ids = array()) {
+        //first let's remove the items
+        $db = $this->_db;
+        $query = $db->getQuery(true);
+        
+        $query->delete($associativeTable)
+              ->where($single_column . ' = ' . (int) $single_column_id);
+        
+        $db->setQuery($query);
+        $db->execute();
+        
+        //now we can add the many_column_ids to the
+        if(count($many_column_ids) !== 0) {
+            $query = $db->getQuery(true);
+            $query->insert($db->quoteName($associativeTable));
+            $query->columns(array($single_column, $many_column));
+            
+            $values = array();
+            foreach($many_column_ids as $many_id) {
+                 $values[] = $single_column_id . ', ' . $many_id;
+            }
+            
+            $query->values($values);
+            $db->setQuery($query);
+            $db->execute();
+        }
+    }
 
 	protected function checkPrivate() {
 		if($this->isPrivate) {
