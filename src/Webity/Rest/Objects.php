@@ -181,17 +181,17 @@ abstract class Objects
 	abstract protected function loadMany(\stdClass $request);
 	abstract protected function modifyRecord($id);
 
-	function uploadFile($file_obj, $target_dir) {
+	function uploadFile($file_obj, $target_dir, $with_thumbnails = false) {
 	    $ext = $this->validateFile($file_obj);
 
 		if (!file_exists($target_dir)) {
 			mkdir($target_dir);
 		}
 
-		$file_location = sprintf($target_dir.'/%s.%s',
-			sha1_file($file_obj['tmp_name']),
-			$ext
-		);
+        $file_location = sprintf($target_dir.'/%s.%s',
+            sha1_file($file_obj['tmp_name']),
+            $ext
+        );
 
 	    // You should name it uniquely.
 	    // DO NOT USE $file_obj['name'] WITHOUT ANY VALIDATION !!
@@ -206,16 +206,19 @@ abstract class Objects
 	    return $file_location;
 	}
 
-	function uploadFileS3($file_obj, $target_dir) {
+	function uploadFileS3($file_obj, $target_dir, $with_thumbnails = false) {
 		$ext = $this->validateFile($file_obj);
+        
 		$api = Api::getInstance();
 
 		if( !empty($api->get('aws.bucket')) && !empty($api->get('aws.key')) ) {
+            
 
-			$file_location = sprintf($target_dir.'/%s.%s',
-				sha1_file($file_obj['tmp_name']),
-				$ext
-			);
+            $file_location = sprintf($target_dir.'/%s.%s',
+                sha1_file($file_obj['tmp_name']),
+                $ext
+            );
+            
 			// Instantiate the client.
 			$s3 = S3Client::factory(array(
 				'key'    => $api->get('aws.key'),
@@ -227,6 +230,8 @@ abstract class Objects
 			if (strpos($file_location, JPATH_ROOT . '/web/') === 0) {
 				$file = substr($file_location, strlen(JPATH_ROOT . '/web/'));
 			}
+            
+//            return $file;
 
 			try {
 			    // Upload data.
@@ -236,6 +241,55 @@ abstract class Objects
 			        'SourceFile'   => $file_obj['tmp_name'],
 			        'ACL'    => 'public-read'
 		    	));
+                
+                if($with_thumbnails) {
+                    //now try to save the 3 types of thumbnails
+                    $thumbnail_sizes = array('small' => 150, 'medium' => 400, 'large' => 1000);
+                    
+                    foreach($thumbnail_sizes as $size => $size_constraint) {
+                        
+                        $img = new \abeautifulsite\SimpleImage($file_obj['tmp_name']);
+                        
+                        switch($img->get_orientation()) {
+                            case 'portrait':
+                                $img->fit_to_height($size_constraint);
+                                break;
+                            case 'landscape':
+                                $img->fit_to_width($size_constraint);
+                                break;
+                            case 'square':
+                                $img->best_fit($size_constraint, $size_constraint);
+                                break;
+                        }
+                        
+                        $thumbnail_filename = sprintf('%s.%s',
+                            $size . '-' . sha1_file($file_obj['tmp_name']),
+                            $ext
+                        );
+                        
+                        $thumbnail_key = sprintf($target_dir . '/%s.%s',
+                            $size . '-' . sha1_file($file_obj['tmp_name']),
+                            $ext
+                        );
+                        
+                        if (strpos($thumbnail_key, JPATH_ROOT . '/web/') === 0) {
+                            $thumbnail_key = substr($thumbnail_key, strlen(JPATH_ROOT . '/web/'));
+                        }
+                        
+                        $img->save($thumbnail_filename);
+                        
+                        $s3->putObject(array(
+                            'Bucket' => $api->get('aws.bucket'),
+                            'Key'    => $thumbnail_key,
+                            'SourceFile'   => $thumbnail_filename,
+                            'ACL'    => 'public-read'
+                        ));
+                        
+                        unlink($thumbnail_filename); //now that's it's been saved to s3 we can delete from the server...
+                        
+                    }
+                    
+                }
 
 		    	// Print the URL to the object.
 		    	return $result['ObjectURL'];
