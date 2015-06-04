@@ -345,6 +345,35 @@ abstract class Objects
 	    return $ext;
 	}
     
+    function copyFile($from_filename, $to_filename) {
+        
+        $api = Api::getInstance();
+        // Instantiate the client.
+        $s3 = S3Client::factory(array(
+            'key'    => $api->get('aws.key'),
+            'secret' => $api->get('aws.secret'),
+        ));
+        
+        try {
+            
+            $result = $s3->copyObject(array(
+                'Bucket'     => $api->get('aws.bucket'),
+                'Key'        => $from_filename,
+                'CopySource' => $api->get('aws.bucket') . '/' . $to_filename,
+            ));
+            
+            return $result;
+            
+        } catch(S3Exception $e) {
+            
+            return $e->getMessage();
+            
+        }
+        
+        return 'amazon configuration has not been set correctly';
+        
+    }
+    
     /**
      This method is used to sync tables by passing an array of ids that should be associated with the id of another table
      */
