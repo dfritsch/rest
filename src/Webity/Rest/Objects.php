@@ -244,22 +244,30 @@ abstract class Objects
                 
                 if($with_thumbnails) {
                     //now try to save the 3 types of thumbnails
-                    $thumbnail_sizes = array('small' => 150, 'medium' => 400, 'large' => 1000);
+                    $thumbnail_sizes = array('small' => 150, 'medium' => 400, 'large' => 1000, 'thumb' => 400);
                     
                     foreach($thumbnail_sizes as $size => $size_constraint) {
                         
                         $img = new \abeautifulsite\SimpleImage($file_obj['tmp_name']);
                         
-                        switch($img->get_orientation()) {
-                            case 'portrait':
-                                $img->fit_to_height($size_constraint);
-                                break;
-                            case 'landscape':
-                                $img->fit_to_width($size_constraint);
-                                break;
-                            case 'square':
-                                $img->best_fit($size_constraint, $size_constraint);
-                                break;
+                        if($size == 'thumb') {
+                            
+                            $img->thumbnail($size_constraint, $size_constraint);
+                            
+                        } else { 
+                        
+                            switch($img->get_orientation()) {
+                                case 'portrait':
+                                    $img->fit_to_height($size_constraint);
+                                    break;
+                                case 'landscape':
+                                    $img->fit_to_width($size_constraint);
+                                    break;
+                                case 'square':
+                                    $img->best_fit($size_constraint, $size_constraint);
+                                    break;
+                            }
+                            
                         }
                         
                         $thumbnail_filename = sprintf('%s.%s',
