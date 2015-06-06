@@ -353,7 +353,7 @@ abstract class Objects
 	    return $ext;
 	}
     
-    function copyFile($from_filename, $to_filename) {
+    function copyS3File($from_filename, $to_filename) {
         
         $api = Api::getInstance();
         // Instantiate the client.
