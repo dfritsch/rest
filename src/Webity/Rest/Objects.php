@@ -366,13 +366,15 @@ abstract class Objects
             
             $result = $s3->copyObject(array(
                 'Bucket'     => $api->get('aws.bucket'),
-                'Key'        => $from_filename,
-                'CopySource' => $api->get('aws.bucket') . '/' . $to_filename,
+                'Key'        => $to_filename,
+                'CopySource' => $api->get('aws.bucket') . '/' . $from_filename,
             ));
             
             return $result;
             
         } catch(S3Exception $e) {
+            
+            file_put_contents(realpath(dirname(__FILE__)) . '/s3_copy_error.log', '{ s3_exception: ' . $e->getMessage() . ' }', FILE_APPEND); //so we can log any errors we might be getting on this.
             
             return $e->getMessage();
             
