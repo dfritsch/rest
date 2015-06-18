@@ -205,6 +205,140 @@ abstract class Objects
 
 	    return $file_location;
 	}
+    
+    //largely an imitation of uploadFileS3 but more tailored to the pieces specific to images (especially cropping)
+    function uploadImageS3($file_obj, $target_dir, $settings = array()) {
+        
+        $ext = $this->validateFile($file_obj);
+        
+        $defaultSettings = array('with_thumbnails' => true, 'crop_orginal' => false, 'crop_settings' => false);
+        
+        //set the defaults that aren't present in the settings array passed
+        foreach($defaultSettings as $settingName => $settingValue) {
+            if(!array_key_exists($settingName, $settings)) {
+                $settings[$settingName] = $settingValue;
+            }
+        }
+        
+        $api = Api::getInstance();
+        
+        if( !empty($api->get('aws.bucket')) && !empty($api->get('aws.key')) ) {
+            
+//            $ext = $this->validateFile($file_obj);
+            //set the filename
+            $file_location = sprintf($target_dir.'/%s.%s',
+                sha1_file($file_obj['tmp_name']),
+                $ext
+            );
+            
+            // trim off JPATH_ROOT/web if it exists at the start
+			if (strpos($file_location, JPATH_ROOT . '/web/') === 0) {
+				$file_location = substr($file_location, strlen(JPATH_ROOT . '/web/'));
+			}
+            
+            // Instantiate the client.
+			$s3 = S3Client::factory(array(
+				'key'    => $api->get('aws.key'),
+				'secret' => $api->get('aws.secret'),
+			));
+            
+            if(is_array($settings['crop_settings'])) {
+                $crop_coordinates = array();
+                $crop_coordinates['x1'] = $settings['crop_settings']['x'];
+                $crop_coordinates['y1'] = $settings['crop_settings']['y'];
+                $crop_coordinates['x2'] = $crop_coordinates['x1'] + $settings['crop_settings']['width'];
+                $crop_coordinates['y2'] = $crop_coordinates['y1'] + $settings['crop_settings']['height'];
+            }
+            
+            if($settings['crop_original'] && isset($crop_coordinates)) {
+                
+                $img = new \abeautifulsite\SimpleImage($file_obj['tmp_name']);
+                $img->crop($crop_coordinates['x1'], $crop_coordinates['y1'], $crop_coordinates['x2'], $crop_coordinates['y2']);
+                $img->save($file_obj['tmp_name']);
+            
+            }
+            
+            // Upload data.
+            try {
+                $result = $s3->putObject(array(
+                    'Bucket' => $api->get('aws.bucket'),
+                    'Key'    => $file_location,
+                    'SourceFile'   => $file_obj['tmp_name'],
+                    'ACL'    => 'public-read'
+                ));
+                
+                if($settings['with_thumbnails']) {
+                    //now we can see about saving thumbnails too
+                    $thumbnail_sizes = array('small' => 150, 'medium' => 400, 'large' => 1000, 'thumb' => 400);
+
+                    foreach($thumbnail_sizes as $size => $size_constraint) {
+
+                        $img = new \abeautifulsite\SimpleImage($file_obj['tmp_name']);
+
+                        if($size == 'thumb') {
+
+                            if(isset($crop_coordinates)) {
+                                $img->crop($crop_coordinates['x1'], $crop_coordinates['y1'], $crop_coordinates['x2'], $crop_coordinates['y2']);
+                            } else {
+                                //no crop coordinates have been set so we need to just go with a generic crop
+                                $img->thumbnail($size_constraint, $size_constraint);
+                            }
+
+                        } else {
+
+                            switch($img->get_orientation()) {
+                                case 'portrait':
+                                    $img->fit_to_height($size_constraint);
+                                    break;
+                                case 'landscape':
+                                    $img->fit_to_width($size_constraint);
+                                    break;
+                                case 'square':
+                                    $img->best_fit($size_constraint, $size_constraint);
+                                    break;
+                            }
+
+                        }
+
+                        $thumbnail_filename = sprintf('%s.%s',
+                            $size . '-' . sha1_file($file_obj['tmp_name']),
+                            $ext
+                        );
+
+                        $thumbnail_key = sprintf($target_dir . '/%s.%s',
+                            $size . '-' . sha1_file($file_obj['tmp_name']),
+                            $ext
+                        );
+
+                        if (strpos($thumbnail_key, JPATH_ROOT . '/web/') === 0) {
+                            $thumbnail_key = substr($thumbnail_key, strlen(JPATH_ROOT . '/web/'));
+                        }
+
+                        $img->save($thumbnail_filename);
+                        
+                        $s3->putObject(array(
+                            'Bucket' => $api->get('aws.bucket'),
+                            'Key'    => $thumbnail_key,
+                            'SourceFile'   => $thumbnail_filename,
+                            'ACL'    => 'public-read'
+                        ));
+                        
+                        unlink($thumbnail_filename); //now that's it's been saved to s3 we can delete from the server...
+
+                    }
+                }
+                
+                if(file_exists($file_obj['tmp_name'])) {
+                    unlink($file_obj['tmp_name']); //make sure the original file was deleted as well
+                }
+                
+                return $result['ObjectURL'];
+                
+            } catch(S3Exception $e) {
+                return $e->getMessage();
+            }
+        }
+    }
 
 	function uploadFileS3($file_obj, $target_dir, $with_thumbnails = false) {
 		$ext = $this->validateFile($file_obj);
