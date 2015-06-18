@@ -279,6 +279,20 @@ abstract class Objects
 
                             if(isset($crop_coordinates)) {
                                 $img->crop($crop_coordinates['x1'], $crop_coordinates['y1'], $crop_coordinates['x2'], $crop_coordinates['y2']);
+                                
+                                //now take it down to at most 400 px in either direction
+                                switch($img->get_orientation()) {
+                                    case 'portrait':
+                                        $img->fit_to_height($size_constraint);
+                                        break;
+                                    case 'landscape':
+                                        $img->fit_to_width($size_constraint);
+                                        break;
+                                    case 'square':
+                                        $img->best_fit($size_constraint, $size_constraint);
+                                        break;
+                                }
+                                
                             } else {
                                 //no crop coordinates have been set so we need to just go with a generic crop
                                 $img->thumbnail($size_constraint, $size_constraint);
