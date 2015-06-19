@@ -277,7 +277,7 @@ abstract class Objects
 
                         if($size == 'thumb') {
 
-                            if(isset($crop_coordinates)) {
+                            if(isset($crop_coordinates) && !$settings['crop_original']) {
                                 $img->crop($crop_coordinates['x1'], $crop_coordinates['y1'], $crop_coordinates['x2'], $crop_coordinates['y2']);
                                 
                                 //now take it down to at most 400 px in either direction
@@ -352,6 +352,8 @@ abstract class Objects
                 return $e->getMessage();
             }
         }
+        
+        return 'amazon configuration has not been set correctly';
     }
 
 	function uploadFileS3($file_obj, $target_dir, $with_thumbnails = false) {
