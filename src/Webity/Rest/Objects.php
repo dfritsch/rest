@@ -512,6 +512,7 @@ abstract class Objects
                 'Bucket'     => $api->get('aws.bucket'),
                 'Key'        => $to_filename,
                 'CopySource' => $api->get('aws.bucket') . '/' . $from_filename,
+                'ACL'    => 'public-read',
             ));
             
             return $result;
