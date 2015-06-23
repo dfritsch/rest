@@ -314,15 +314,9 @@ abstract class Objects
 
                         }
 
-                        $thumbnail_filename = sprintf('%s.%s',
-                            $size . '-' . sha1_file($file_obj['tmp_name']),
-                            $ext
-                        );
+                        $thumbnail_filename = $size . '-' . basename($result['ObjectURL']);
 
-                        $thumbnail_key = sprintf($target_dir . '/%s.%s',
-                            $size . '-' . sha1_file($file_obj['tmp_name']),
-                            $ext
-                        );
+                        $thumbnail_key = $target_dir . '/' . $thumbnail_filename;
 
                         if (strpos($thumbnail_key, JPATH_ROOT . '/web/') === 0) {
                             $thumbnail_key = substr($thumbnail_key, strlen(JPATH_ROOT . '/web/'));
