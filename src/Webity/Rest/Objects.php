@@ -568,4 +568,328 @@ abstract class Objects
 			}
 		}
 	}
+    
+    //NESTED TABLE functionality
+    //data should be in the form of stdClass
+    public function addNode($table = '', $data, $parent_id = 0, $original = 0, $primary_key = 'deckId') {
+        
+        $db = $this->_db;
+        
+        if($parent_id > 0) {
+            
+            $query = $db->getQuery(true);
+            $query->select('lft, depth')
+                  ->from($table)
+                  ->where($primary_key . ' = ' . (int) $parent_id);
+            
+            $db->setQuery($query);
+            $result = $db->loadObject();
+            
+            if( !$result ) {
+                return false;
+            }
+            
+            $lft = $result->lft;
+            
+            $query = "UPDATE $table SET rgt = rgt + 2 WHERE rgt > $lft";
+            
+            $db->setQuery($query);
+            $db->execute();
+            
+            $query = "UPDATE $table SET lft = lft + 2 WHERE lft > $lft";
+            
+            $db->setQuery($query);
+            $db->execute();
+            
+            $data->lft = $lft + 1;
+            $data->rgt = $data->lft + 1;
+            $data->depth = $result->depth + 1;
+            
+        } else {
+            //we need to find the highest value to know what the new node's lft / rgt will be
+            $rgt = $this->_lastNodePosition($table);
+            
+            $data->lft = $rgt + 1;
+            $data->rgt = $rgt + 2;
+            $data->depth = 0;
+        }
+        
+        $data->original = $original;
+        
+        $db->insertObject($table, $data);
+        
+        return $db->insertid();
+    }
+    
+    //set the state to a value (-2 for "deleted but restorable" -3 for "fully delete and clean me up")
+    public function deleteNode($table = '', $id, $soft_delete = true, $primary_key = 'deckId') {
+        
+        $db = $this->_db;
+        $state = $soft_delete ? -2 : -3;
+        
+        $query = $db->getQuery(true);
+        $query->select('rgt, lft, (rgt - lft + 1) AS width')
+              ->from($table)
+              ->where($primary_key . ' = ' . (int) $id . ' OR original = ' . (int) $id);
+        
+        $db->setQuery($query);
+        
+        $results = $db->loadObjectList();
+        
+        if( !$results ) {
+            return false;
+        }
+        
+        //go through each instance where the row (or it's duplicates) can be updated 
+        foreach($results as $result) {
+            
+            $query = "UPDATE $table SET state = $state WHERE lft BETWEEN $result->lft AND $result->rgt";
+            
+            $db->setQuery($query);
+            $db->execute();
+            
+            if($state < -2) {
+            
+                //we still want soft deleted items to retain their position in the hierarchy because they're visible to admins and can be restored
+                $query = "UPDATE $table SET rgt = rgt - $result->width WHERE rgt > $result->rgt";
+
+                $db->setQuery($query);
+                $db->execute();
+
+                $query = "UPDATE $table SET lft = lft - $result->width WHERE lft > $result->rgt";
+
+                $db->setQuery($query);
+                $db->execute();
+                
+            }
+            
+        }
+        
+        return true;
+    }
+    
+    //for now simply to make sure we are deleting nodes properly
+    public function testDeleteNode($table = '', $id, $soft_delete = true, $primary_key = 'deckId') {
+        
+        $db = $this->_db;
+        $state = $soft_delete ? -2 : -3;
+        
+        $query = $db->getQuery(true);
+        $query->select('rgt, lft, (rgt - lft + 1) AS width')
+              ->from($table)
+              ->where($primary_key . ' = ' . (int) $id . ' OR original = ' . (int) $id);
+        
+        $db->setQuery($query);
+        
+        $results = $db->loadObjectList();
+        
+        //go through each instance where the row (or it's duplicates) can be updated 
+        foreach($results as $result) {
+            
+            $query = "DELETE FROM $table WHERE lft BETWEEN $result->lft AND $result->rgt";
+            
+            $db->setQuery($query);
+            $db->execute();
+            
+            $query = "UPDATE $table SET rgt = rgt - $result->width WHERE rgt > $result->rgt";
+            
+            $db->setQuery($query);
+            $db->execute();
+            
+            $query = "UPDATE $table SET lft = lft - $result->width WHERE lft > $result->rgt";
+            
+            $db->setQuery($query);
+            $db->execute();
+            
+        }
+    }
+    
+    //only would work for nodes that are not set to state -3
+    public function restoreNode($table = '', $id, $primary_key = 'deckId') {
+        
+        $db = $this->_db;
+        $state = 1;
+        
+        $query = $db->getQuery(true);
+        $query->select('rgt, lft, (rgt - lft + 1) AS width')
+              ->from($table)
+              ->where($primary_key . ' = ' . (int) $id . ' OR original = ' . (int) $id);
+        
+        $db->setQuery($query);
+        
+        $results = $db->loadObjectList();
+        
+        if( !$results ) {
+            return false;
+        }
+        
+        //go through each instance where the row (or it's duplicates) can be updated 
+        foreach($results as $result) {
+            
+            $query = "UPDATE $table SET state = $state WHERE lft BETWEEN $result->lft AND $result->rgt";
+            
+            $db->setQuery($query);
+            $db->execute();
+            
+        }
+        
+        return true;
+        
+    }
+    
+    //moves a node and it's children to the desired location (including root)
+    public function moveNode($table = '', $id, $new_parent = 0, $primary_key = 'deckId') {
+        
+        $db = $this->_db;
+        $query = $db->getQuery(true);
+        $query->select('rgt, lft, (rgt - lft + 1) AS width, depth')
+              ->from($table)
+              ->where($primary_key . ' = ' . (int) $id);
+        
+        $db->setQuery($query);
+        
+        $subtree = $db->loadObject();
+        
+        if( !$subtree ) {
+            return false;
+        }
+        
+        $width = $subtree->width;
+        $old_position_lft = $subtree->lft;
+        $old_position_rgt = $subtree->rgt;
+        $old_depth = $subtree->depth - 1; //we want the depth of the parent to compare to (no parent then it should be -1)
+        
+        //different approach if we are moving the node to the root
+        if($new_parent > 0) {
+        
+            $query->clear();
+            $query->select('lft, depth')
+                  ->from($table)
+                  ->where($primary_key . ' = ' . (int) $new_parent);
+            
+            $db->setQuery($query);
+            
+            $new_parent = $db->loadObject();
+            
+            if( !$new_parent ) {
+                return false;
+            }
+            
+            $new_position_lft = $new_parent->lft + 1;
+            $new_depth = $new_parent->depth;
+        
+        } else {
+        
+            $new_position_lft = $this->_lastNodePosition($table) + 1;
+            $new_depth = -1; //because there is no parent
+            
+        }
+        
+        $depth_difference = $new_depth - $old_depth;
+        $distance = $new_position_lft - $subtree->lft;
+        
+        if($distance < 0) {
+            $distance -= $width;
+            $old_position_lft += $width;
+        }
+        
+        /**
+         *  -- create new space for subtree
+         *  UPDATE tags SET lpos = lpos + :width WHERE lpos >= :newpos
+         *  UPDATE tags SET rpos = rpos + :width WHERE rpos >= :newpos
+         */
+        
+        $query = "UPDATE $table SET lft = lft + $width WHERE lft >= $new_position_lft";
+        $db->setQuery($query);
+        $db->execute();
+        
+        $query = "UPDATE $table SET rgt = rgt + $width WHERE rgt >= $new_position_lft";
+        $db->setQuery($query);
+        $db->execute();
+        
+        /**
+         *  -- move subtree into new space
+         *  UPDATE tags SET lpos = lpos + :distance, rpos = rpos + :distance
+         *           WHERE lpos >= :tmppos AND rpos < :tmppos + :width
+         */
+        
+        $query = "UPDATE $table SET lft = lft + $distance, rgt = rgt + $distance, depth = depth + $depth_difference WHERE lft >= $old_position_lft AND rgt < $old_position_lft + $width";
+        $db->setQuery($query);
+        $db->execute();
+        
+        /*
+         *  -- remove old space vacated by subtree
+         *  UPDATE tags SET lpos = lpos - :width WHERE lpos > :oldrpos
+         *  UPDATE tags SET rpos = rpos - :width WHERE rpos > :oldrpos
+         */
+        
+        $query = "UPDATE $table SET lft = lft - $width WHERE lft > $old_position_rgt";
+        $db->setQuery($query);
+        $db->execute();
+        
+        $query = "UPDATE $table SET rgt = rgt - $width WHERE rgt > $old_position_rgt";
+        $db->setQuery($query);
+        $db->execute();
+        
+        return true;
+        
+    }
+    
+        
+    //similar to duplicating a node except it simply defines a new location where the 'original' column is set based on the id
+    //warning, it may be possible to reassign to the same location as the original so it's potentially kind of weird behavior
+    public function reassignNode($table = '', $id, $parent_id = 0, $primary_key = 'deckId') {
+        
+        $db = $this->_db;
+        $query = $db->getQuery(true);
+        
+        $query->select($primary_key . ', state, original')
+              ->from($table)
+              ->where($primary_key . ' = ' . $primary_key);
+        
+        $db->setQuery($query);
+        
+        $result = $db->loadObject();
+        
+        if( !$result ) {
+            return false;
+        }
+        
+        $data = new \stdClass();
+        
+        echo $result->{ $primary_key };
+        
+        $data->original = $result->original > 0 ? $result->original : $result->{ $primary_key };
+        $data->state = $result->state;
+        
+        $new_id = $this->addNode($table, $data, $parent_id, $data->original);
+        
+        if($new_id === false) {
+            return false;
+        }
+        
+        return $this->moveNode($table, $new_id, $parent_id);
+        
+        return true;
+    }
+    
+    //nested table helper functions
+    
+    //keep in mind this get's the highest RIGHT max position
+    protected function _lastNodePosition($table = '') {
+        
+        $db = $this->_db;
+        
+        //we need to find the highest value to know what the new node's lft / rgt will be
+        $query = $db->getQuery(true);
+        $query->select('MAX(rgt) as max_rgt')
+              ->from($table);
+            
+        $db->setQuery($query);
+        $result = $db->loadObject();
+            
+        $rgt = $result->max_rgt;
+        
+        return $rgt;
+    }
 }
