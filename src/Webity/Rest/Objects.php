@@ -571,7 +571,12 @@ abstract class Objects
     
     //NESTED TABLE functionality
     //data should be in the form of stdClass
-    public function addNode($table = '', $data, $parent_id = 0, $original = 0, $primary_key = 'deckId') {
+    //new nodes should be referencing parent_id of primary_key
+    public function addNode($table = '', $data, $parent_id = 0) {
+        
+        $tableLowercase = strtolower($table);
+        $primary_key = $tableLowercase . 'NestedId';
+        $foreign_key = $tableLowercase . 'Id';
         
         $db = $this->_db;
         
@@ -579,7 +584,7 @@ abstract class Objects
             
             $query = $db->getQuery(true);
             $query->select('lft, depth')
-                  ->from($table)
+                  ->from('#__' . $table . 'Nested')
                   ->where($primary_key . ' = ' . (int) $parent_id);
             
             $db->setQuery($query);
@@ -591,12 +596,12 @@ abstract class Objects
             
             $lft = $result->lft;
             
-            $query = "UPDATE $table SET rgt = rgt + 2 WHERE rgt > $lft";
+            $query = "UPDATE #__$table" . "Nested SET rgt = rgt + 2 WHERE rgt > $lft";
             
             $db->setQuery($query);
             $db->execute();
             
-            $query = "UPDATE $table SET lft = lft + 2 WHERE lft > $lft";
+            $query = "UPDATE #__$table" . "Nested SET lft = lft + 2 WHERE lft > $lft";
             
             $db->setQuery($query);
             $db->execute();
@@ -614,70 +619,25 @@ abstract class Objects
             $data->depth = 0;
         }
         
-        $data->original = $original;
-        
-        $db->insertObject($table, $data);
+        $db->insertObject('#__' . $table . 'Nested', $data);
         
         return $db->insertid();
     }
     
-    //set the state to a value (-2 for "deleted but restorable" -3 for "fully delete and clean me up")
-    public function deleteNode($table = '', $id, $soft_delete = true, $primary_key = 'deckId') {
-        
-        $db = $this->_db;
-        $state = $soft_delete ? -2 : -3;
-        
-        $query = $db->getQuery(true);
-        $query->select('rgt, lft, (rgt - lft + 1) AS width')
-              ->from($table)
-              ->where($primary_key . ' = ' . (int) $id . ' OR original = ' . (int) $id);
-        
-        $db->setQuery($query);
-        
-        $results = $db->loadObjectList();
-        
-        if( !$results ) {
-            return false;
-        }
-        
-        //go through each instance where the row (or it's duplicates) can be updated 
-        foreach($results as $result) {
-            
-            $query = "UPDATE $table SET state = $state WHERE lft BETWEEN $result->lft AND $result->rgt";
-            
-            $db->setQuery($query);
-            $db->execute();
-            
-            if($state < -2) {
-            
-                //we still want soft deleted items to retain their position in the hierarchy because they're visible to admins and can be restored
-                $query = "UPDATE $table SET rgt = rgt - $result->width WHERE rgt > $result->rgt";
-
-                $db->setQuery($query);
-                $db->execute();
-
-                $query = "UPDATE $table SET lft = lft - $result->width WHERE lft > $result->rgt";
-
-                $db->setQuery($query);
-                $db->execute();
-                
-            }
-            
-        }
-        
-        return true;
-    }
-    
     //for now simply to make sure we are deleting nodes properly
-    public function testDeleteNode($table = '', $id, $soft_delete = true, $primary_key = 'deckId') {
+    //note: id referes to the foreign_key id
+    public function deleteNodeByForeign($table = '', $foreign_id) {
+        
+        $tableLowercase = strtolower($table);
+        $primary_key = $tableLowercase . 'NestedId';
+        $foreign_key = $tableLowercase . 'Id';
         
         $db = $this->_db;
-        $state = $soft_delete ? -2 : -3;
         
         $query = $db->getQuery(true);
-        $query->select('rgt, lft, (rgt - lft + 1) AS width')
-              ->from($table)
-              ->where($primary_key . ' = ' . (int) $id . ' OR original = ' . (int) $id);
+        $query->select($primary_key)
+              ->from('#__' . $table . 'Nested')
+              ->where($foreign_key . ' = ' . (int) $foreign_id);
         
         $db->setQuery($query);
         
@@ -686,65 +646,59 @@ abstract class Objects
         //go through each instance where the row (or it's duplicates) can be updated 
         foreach($results as $result) {
             
-            $query = "DELETE FROM $table WHERE lft BETWEEN $result->lft AND $result->rgt";
-            
-            $db->setQuery($query);
-            $db->execute();
-            
-            $query = "UPDATE $table SET rgt = rgt - $result->width WHERE rgt > $result->rgt";
-            
-            $db->setQuery($query);
-            $db->execute();
-            
-            $query = "UPDATE $table SET lft = lft - $result->width WHERE lft > $result->rgt";
-            
-            $db->setQuery($query);
-            $db->execute();
+            $this->deleteNodeByPrimary($table, $result->{ $primary_key });
             
         }
     }
     
-    //only would work for nodes that are not set to state -3
-    public function restoreNode($table = '', $id, $primary_key = 'deckId') {
+    //deletes a single node based on the primary key of the nested table
+    public function deleteNodeByPrimary($table = '', $primary_id) {
+        
+        $tableLowercase = strtolower($table);
+        $primary_key = $tableLowercase . 'NestedId';
+        $foreign_key = $tableLowercase . 'Id';
         
         $db = $this->_db;
-        $state = 1;
         
         $query = $db->getQuery(true);
-        $query->select('rgt, lft, (rgt - lft + 1) AS width')
-              ->from($table)
-              ->where($primary_key . ' = ' . (int) $id . ' OR original = ' . (int) $id);
+        $query->select('lft, rgt, (rgt - lft + 1) AS width')
+              ->from('#__' . $table . 'Nested')
+              ->where($primary_key . ' = ' . $primary_id);
         
         $db->setQuery($query);
+        $result = $db->loadObject();
         
-        $results = $db->loadObjectList();
-        
-        if( !$results ) {
-            return false;
-        }
-        
-        //go through each instance where the row (or it's duplicates) can be updated 
-        foreach($results as $result) {
+        $query = "DELETE FROM #__$table" . "Nested WHERE lft BETWEEN $result->lft AND $result->rgt";
             
-            $query = "UPDATE $table SET state = $state WHERE lft BETWEEN $result->lft AND $result->rgt";
-            
-            $db->setQuery($query);
-            $db->execute();
-            
-        }
-        
-        return true;
+        $db->setQuery($query);
+        $db->execute();
+
+        $query = "UPDATE #__$table" . "Nested SET rgt = rgt - $result->width WHERE rgt > $result->rgt";
+
+        $db->setQuery($query);
+        $db->execute();
+
+        $query = "UPDATE #__$table" . "Nested SET lft = lft - $result->width WHERE lft > $result->rgt";
+
+        $db->setQuery($query);
+        $db->execute();
         
     }
     
     //moves a node and it's children to the desired location (including root)
-    public function moveNode($table = '', $id, $new_parent = 0, $primary_key = 'deckId') {
+    //note: the id and new_parent MUST be a reference to the primary keys
+    public function moveNode($table = '', $primary_id, $new_parent = 0) {
+        
+        $tableLowercase = strtolower($table);
+        $primary_key = $tableLowercase . 'NestedId';
+        $foreign_key = $tableLowercase . 'Id';
+        
         
         $db = $this->_db;
         $query = $db->getQuery(true);
         $query->select('rgt, lft, (rgt - lft + 1) AS width, depth')
-              ->from($table)
-              ->where($primary_key . ' = ' . (int) $id);
+              ->from('#__' . $table . 'Nested')
+              ->where($primary_key . ' = ' . (int) $primary_id);
         
         $db->setQuery($query);
         
@@ -764,7 +718,7 @@ abstract class Objects
         
             $query->clear();
             $query->select('lft, depth')
-                  ->from($table)
+                  ->from('#__' . $table . 'Nested')
                   ->where($primary_key . ' = ' . (int) $new_parent);
             
             $db->setQuery($query);
@@ -799,11 +753,11 @@ abstract class Objects
          *  UPDATE tags SET rpos = rpos + :width WHERE rpos >= :newpos
          */
         
-        $query = "UPDATE $table SET lft = lft + $width WHERE lft >= $new_position_lft";
+        $query = "UPDATE #__$table" . "Nested SET lft = lft + $width WHERE lft >= $new_position_lft";
         $db->setQuery($query);
         $db->execute();
         
-        $query = "UPDATE $table SET rgt = rgt + $width WHERE rgt >= $new_position_lft";
+        $query = "UPDATE #__$table" . "Nested SET rgt = rgt + $width WHERE rgt >= $new_position_lft";
         $db->setQuery($query);
         $db->execute();
         
@@ -813,7 +767,7 @@ abstract class Objects
          *           WHERE lpos >= :tmppos AND rpos < :tmppos + :width
          */
         
-        $query = "UPDATE $table SET lft = lft + $distance, rgt = rgt + $distance, depth = depth + $depth_difference WHERE lft >= $old_position_lft AND rgt < $old_position_lft + $width";
+        $query = "UPDATE #__$table" . "Nested SET lft = lft + $distance, rgt = rgt + $distance, depth = depth + $depth_difference WHERE lft >= $old_position_lft AND rgt < $old_position_lft + $width";
         $db->setQuery($query);
         $db->execute();
         
@@ -823,11 +777,11 @@ abstract class Objects
          *  UPDATE tags SET rpos = rpos - :width WHERE rpos > :oldrpos
          */
         
-        $query = "UPDATE $table SET lft = lft - $width WHERE lft > $old_position_rgt";
+        $query = "UPDATE #__$table" . "Nested SET lft = lft - $width WHERE lft > $old_position_rgt";
         $db->setQuery($query);
         $db->execute();
         
-        $query = "UPDATE $table SET rgt = rgt - $width WHERE rgt > $old_position_rgt";
+        $query = "UPDATE #__$table" . "Nested SET rgt = rgt - $width WHERE rgt > $old_position_rgt";
         $db->setQuery($query);
         $db->execute();
         
@@ -835,43 +789,26 @@ abstract class Objects
         
     }
     
+    //note: id references the foreign_key id
+    public function assignNode($table = '', $foreign_id, $parent_ids = array()) {
         
-    //similar to duplicating a node except it simply defines a new location where the 'original' column is set based on the id
-    //warning, it may be possible to reassign to the same location as the original so it's potentially kind of weird behavior
-    public function reassignNode($table = '', $id, $parent_id = 0, $primary_key = 'deckId') {
+        $tableLowercase = strtolower($table);
+        $primary_key = $tableLowercase . 'NestedId';
+        $foreign_key = $tableLowercase . 'Id';
         
         $db = $this->_db;
-        $query = $db->getQuery(true);
         
-        $query->select($primary_key . ', state, original')
-              ->from($table)
-              ->where($primary_key . ' = ' . $primary_key);
-        
-        $db->setQuery($query);
-        
-        $result = $db->loadObject();
-        
-        if( !$result ) {
-            return false;
-        }
+        //first delete all previously assigned nodes
+        $this->deleteNodeByForeign($table, $foreign_id);
         
         $data = new \stdClass();
+        $data->{ $foreign_key } = $foreign_id;
         
-        echo $result->{ $primary_key };
-        
-        $data->original = $result->original > 0 ? $result->original : $result->{ $primary_key };
-        $data->state = $result->state;
-        
-        $new_id = $this->addNode($table, $data, $parent_id, $data->original);
-        
-        if($new_id === false) {
-            return false;
+        foreach($parent_ids as $parent_id) {
+            $this->addNode($table, $data, $parent_id);
         }
         
-        return $this->moveNode($table, $new_id, $parent_id);
-        
-        return true;
-    }
+    }    
     
     //nested table helper functions
     
@@ -883,7 +820,7 @@ abstract class Objects
         //we need to find the highest value to know what the new node's lft / rgt will be
         $query = $db->getQuery(true);
         $query->select('MAX(rgt) as max_rgt')
-              ->from($table);
+              ->from('#__' . $table . 'Nested');
             
         $db->setQuery($query);
         $result = $db->loadObject();
